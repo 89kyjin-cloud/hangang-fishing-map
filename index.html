@@ -23,7 +23,7 @@ h1{font-size:19px;margin:0;white-space:nowrap} header .sub{font-size:12px;opacit
 .controls button,.locbar button,.openPanel,.listClose{border:0;border-radius:12px;background:#fff;color:var(--green);font-weight:850;padding:12px 14px;box-shadow:0 2px 10px #0002;font-size:16px}
 .controls button{width:48px;height:48px;font-size:24px;padding:0}
 .notice{position:absolute;left:14px;bottom:16px;background:#fff8df;border:1px solid #e7c76d;border-radius:12px;padding:10px 12px;max-width:395px;font-size:13px;line-height:1.4;z-index:25}
-.gpsTop{position:absolute;left:14px;top:14px;display:grid;grid-template-columns:300px 1fr;gap:12px;z-index:24;max-width:760px}
+.gpsTop{position:absolute;right:14px;top:14px;display:grid;grid-template-columns:300px;gap:10px;z-index:45;max-width:320px}
 .gpsBox{background:#fffffff4;border:1px solid #dde6dd;border-radius:14px;box-shadow:0 2px 14px #0001;padding:12px;font-size:14px;line-height:1.45;backdrop-filter:blur(4px)}
 .gpsBox b{color:var(--green)} .locbar{display:flex;gap:8px;margin-top:9px} .locbar button{flex:1;background:var(--green);color:#fff;font-size:14px;padding:10px}
 .panel{background:#fff;border-left:1px solid #ddd;overflow:auto;transition:.25s;position:relative;z-index:35}
@@ -69,8 +69,7 @@ input{width:100%;padding:12px;border:1px solid #ccc;border-radius:12px;font-size
     <div id="gpsPin" class="gpsPin"></div>
   </div>
   <div class="gpsTop">
-    <div class="gpsBox"><b>📍 내 위치</b><div id="coord">아직 확인 전</div><div class="locbar"><button onclick="locateOnce()">내 위치 확인</button><button onclick="toggleWatch()">추적 시작</button></div></div>
-    <div class="gpsBox status"><b>현재 위치 상태</b><div id="gpsStatus">위치 권한 허용 후 가까운 금지구역을 계산합니다.</div></div>
+    <div class="gpsBox"><b>📍 위치 확인</b><div id="coord">아직 확인 전</div><div class="locbar"><button onclick="locateOnce()">내 위치</button><button onclick="toggleWatch()">추적</button></div><div id="gpsStatus" class="miniStatus">위치 권한 허용 후 가까운 금지구역을 계산합니다.</div></div>
   </div>
   <div class="controls"><button onclick="zoomBy(1.25)">＋</button><button onclick="zoomBy(.8)">－</button><button onclick="resetView()">◎</button></div>
   <div class="notice">⚠️ 현장 안내판·출입통제·생태보호구역 표지가 있으면 이 지도보다 우선합니다. GPS 판정은 보조 확인용입니다.</div>
@@ -96,14 +95,41 @@ input{width:100%;padding:12px;border:1px solid #ccc;border-radius:12px;font-size
 const zones=[{"id": 1, "name": "뚝섬 1지역", "desc": "자양2동 잠실수중보 ~ 청담대교 상류 670m 사이의 한강호안 및 내수면", "x": 1150, "y": 650, "lat": 37.5249, "lng": 127.0715, "r": 550}, {"id": 2, "name": "뚝섬 2지역", "desc": "청담대교 북단 상류 450m ~ 성수동 영동대교 북단 하류 710m 사이의 한강호안 및 내수면", "x": 1250, "y": 675, "lat": 37.5282, "lng": 127.05, "r": 750}, {"id": 3, "name": "뚝섬 3지역", "desc": "서울숲 회전 고가시설 ~ 중랑천 합류부 사이의 한강호안 및 내수면", "x": 935, "y": 650, "lat": 37.5383, "lng": 127.0352, "r": 700}, {"id": 4, "name": "이촌 1지역", "desc": "중랑천 합류부 ~ 동호대교 북단 하류 300m 사이의 한강호안 및 내수면", "x": 885, "y": 690, "lat": 37.533, "lng": 127.0202, "r": 500}, {"id": 5, "name": "이촌 2지역", "desc": "동호대교 북단 하류 800m ~ 한남대교 북단 상류 380m 사이의 한강호안 및 내수면(전망로 포함)", "x": 805, "y": 720, "lat": 37.5272, "lng": 127.006, "r": 700}, {"id": 6, "name": "이촌 3지역", "desc": "노들섬 전체, 한강대교 북단 상류 900m(거북선 선착장) ~ 한강대교 북단 교량 사이의 한강호안 및 내수면", "x": 705, "y": 770, "lat": 37.5167, "lng": 126.9597, "r": 850}, {"id": 7, "name": "밤섬지역", "desc": "밤섬 전체 및 마포대교 북단 상류 650m ~ 당산철교 북단 상류 500m 사이의 한강호안 및 내수면", "x": 575, "y": 655, "lat": 37.5346, "lng": 126.9166, "r": 1100}, {"id": 8, "name": "망원 1지역", "desc": "양화대교 북단 교량 ~ 합정동 양화대교 북단 하류 550m 사이의 한강호안 및 내수면", "x": 525, "y": 657, "lat": 37.5428, "lng": 126.904, "r": 650}, {"id": 9, "name": "망원 2지역", "desc": "성산대교 북단 상류 600m 교량 ~ 홍제천 합류부 사이의 한강호안 및 내수면", "x": 465, "y": 625, "lat": 37.5525, "lng": 126.8933, "r": 800}, {"id": 10, "name": "망원 3지역", "desc": "당산철교 북단 상류 500m ~ 당산철교 북단 교량 사이의 한강호안 및 내수면", "x": 560, "y": 690, "lat": 37.5378, "lng": 126.9067, "r": 450}, {"id": 11, "name": "난지 1지역", "desc": "홍제천교 ~ 성산대교 북단 하류 1,300m(조정면허시험장 하류 50m) 사이의 한강호안 및 내수면", "x": 380, "y": 545, "lat": 37.5625, "lng": 126.879, "r": 950}, {"id": 12, "name": "난지 2지역", "desc": "가양대교 북단 상류 800m(난지캠핑장 끝 호안 하류 측) ~ 가양대교 북단 하류 450m 사이의 한강호안 및 내수면(생태습지원 엄격한 내수면 포함)", "x": 360, "y": 470, "lat": 37.5715, "lng": 126.8527, "r": 950}, {"id": 13, "name": "난지 3지역", "desc": "월드컵대교 북단 하류 750m ~ 월드컵대교 북단 하류 900m 사이의 한강호안 및 내수면", "x": 410, "y": 540, "lat": 37.5585, "lng": 126.881, "r": 300}, {"id": 14, "name": "잠실지역", "desc": "잠실5동 잠실수중보 ~ 잠실수중보 하류 1,300m 사이의 한강호안 및 내수면", "x": 1260, "y": 700, "lat": 37.5185, "lng": 127.1042, "r": 1200}, {"id": 15, "name": "잠원1지역", "desc": "동호대교 남단 하류 300m(리버시티) ~ 한남대교 남단 하류 1,000m(요트클럽 하류 100m) 사이의 한강호안 및 내수면", "x": 850, "y": 740, "lat": 37.5187, "lng": 127.0137, "r": 1000}, {"id": 16, "name": "반포 1지역", "desc": "반포동 반포대교 남단 상류 200m(전망데크) ~ 하류 500m(임시선착장) 사이의 한강호안 및 내수면", "x": 780, "y": 825, "lat": 37.512, "lng": 126.995, "r": 550}, {"id": 17, "name": "반포 2지역", "desc": "동작대교 남단 상류 450m(서래섬 하류 100m) ~ 동작대교 남단 하류 280m 사이의 한강호안 및 내수면", "x": 725, "y": 810, "lat": 37.5107, "lng": 126.9785, "r": 600}, {"id": 18, "name": "흑석지역", "desc": "한강대교 남단 상류 1,360m(한강현대아파트 114동 앞) ~ 본동 한강철교 남단 상류 400m 사이의 한강호안 및 내수면", "x": 705, "y": 760, "lat": 37.5077, "lng": 126.956, "r": 900}, {"id": 19, "name": "여의도 1지역", "desc": "원효대교 남단 상류 430m ~ 서강대교 남단 하류 370m 사이의 한강호안 및 내수면", "x": 620, "y": 760, "lat": 37.5263, "lng": 126.935, "r": 850}, {"id": 20, "name": "여의도 2지역", "desc": "여의도동 샛강 내수면 전역(상·하류 합류부 및 연결한 내수면 포함)", "x": 610, "y": 835, "lat": 37.5188, "lng": 126.927, "r": 1000}, {"id": 21, "name": "양화 1지역", "desc": "당산철교 남단 상류 370m(여의도 샛강 하류 합류부) ~ 당산철교 남단 60m(해양소년단 수상훈련장)의 한강호안 및 내수면", "x": 520, "y": 765, "lat": 37.5327, "lng": 126.9062, "r": 450}, {"id": 22, "name": "양화 2지역", "desc": "선유도공원 전체 및 성산대교 남단 상류 600m ~ 안양천 합류부 상류 150m 사이의 한강호안 및 내수면", "x": 480, "y": 680, "lat": 37.542, "lng": 126.8958, "r": 1000}, {"id": 23, "name": "양화3, 강서 1지역", "desc": "염창동 안양천 합류부 하류 150m ~ 마곡철교 남단 하류 400m 사이의 한강호안 및 내수면", "x": 265, "y": 505, "lat": 37.555, "lng": 126.8515, "r": 1200}, {"id": 24, "name": "강서 2지역", "desc": "방화대교 남단 하류 50m ~ 행주대교 남단 상류 400m 사이의 한강호안 및 내수면", "x": 110, "y": 395, "lat": 37.585, "lng": 126.81, "r": 1200}];
 const viewer=document.getElementById('viewer'), stage=document.getElementById('stage'), panel=document.getElementById('panel');
 const gpsPin=document.getElementById('gpsPin'), gpsStatus=document.getElementById('gpsStatus'), coord=document.getElementById('coord');
-let scale=.68,x=10,y=10,active=null,watchId=null;
+let scale=.68,x=10,y=10,active=null,watchId=null,baseScale=.68;
 const pointers=new Map(); let lastPan=null,lastPinchDist=null,lastPinchMid=null;
 
-function update(){stage.style.transform=`translate(${x}px,${y}px) scale(${scale})`}
+function canPan(){return scale>baseScale*1.03}
+function clampPosition(){
+  if(!canPan()){
+    x=(viewer.clientWidth-1536*scale)/2;
+    y=(viewer.clientHeight-1024*scale)/2;
+    return;
+  }
+  const minX=Math.min(0,viewer.clientWidth-1536*scale);
+  const minY=Math.min(0,viewer.clientHeight-1024*scale);
+  const maxX=Math.max(0,(viewer.clientWidth-1536*scale)/2);
+  const maxY=Math.max(0,(viewer.clientHeight-1024*scale)/2);
+  x=Math.min(maxX,Math.max(minX,x));
+  y=Math.min(maxY,Math.max(minY,y));
+}
+function update(){clampPosition();stage.style.transform=`translate(${x}px,${y}px) scale(${scale})`}
 function clamp(v){return Math.max(.24,Math.min(8,v))}
-function setScaleAround(ns,cx,cy){ns=clamp(ns);const mx=(cx-x)/scale,my=(cy-y)/scale;scale=ns;x=cx-mx*scale;y=cy-my*scale;update()}
+function setScaleAround(ns,cx,cy){
+  ns=clamp(ns);
+  const mx=(cx-x)/scale,my=(cy-y)/scale;
+  scale=ns;
+  x=cx-mx*scale;
+  y=cy-my*scale;
+  update();
+}
 function zoomBy(f){const r=viewer.getBoundingClientRect();setScaleAround(scale*f,r.width/2,r.height/2)}
-function resetView(){scale=Math.min(viewer.clientWidth/1536,viewer.clientHeight/1024)*.96;x=10;y=10;update()}
+function resetView(){
+  baseScale=Math.min(viewer.clientWidth/1536,viewer.clientHeight/1024)*.96;
+  scale=baseScale;
+  x=(viewer.clientWidth-1536*scale)/2;
+  y=(viewer.clientHeight-1024*scale)/2;
+  update();
+}
 function togglePanel(){panel.classList.toggle('closed')}
 
 function clearMarkerClasses(){document.querySelectorAll('.marker').forEach(m=>m.classList.remove('active','gpsNear'))}
@@ -169,7 +195,20 @@ function mid(a,b){return {clientX:(a.clientX+b.clientX)/2,clientY:(a.clientY+b.c
 
 viewer.addEventListener('wheel',e=>{e.preventDefault();const r=viewer.getBoundingClientRect();setScaleAround(scale*(e.deltaY<0?1.12:.89),e.clientX-r.left,e.clientY-r.top)},{passive:false});
 viewer.addEventListener('pointerdown',e=>{viewer.setPointerCapture(e.pointerId);pointers.set(e.pointerId,e);if(pointers.size===1)lastPan={clientX:e.clientX,clientY:e.clientY};else if(pointers.size===2){const p=[...pointers.values()];lastPinchDist=dist(p[0],p[1]);lastPinchMid=mid(p[0],p[1]);lastPan=null}});
-viewer.addEventListener('pointermove',e=>{if(!pointers.has(e.pointerId))return;pointers.set(e.pointerId,e);if(pointers.size===1&&lastPan){x+=e.clientX-lastPan.clientX;y+=e.clientY-lastPan.clientY;lastPan={clientX:e.clientX,clientY:e.clientY};update()} if(pointers.size===2){const p=[...pointers.values()],nd=dist(p[0],p[1]),nm=mid(p[0],p[1]),r=viewer.getBoundingClientRect();if(lastPinchDist&&lastPinchMid){x+=nm.clientX-lastPinchMid.clientX;y+=nm.clientY-lastPinchMid.clientY;setScaleAround(scale*(nd/lastPinchDist),nm.clientX-r.left,nm.clientY-r.top)}lastPinchDist=nd;lastPinchMid=nm}});
+viewer.addEventListener('pointermove',e=>{if(!pointers.has(e.pointerId))return;pointers.set(e.pointerId,e);if(pointers.size===1&&lastPan){
+  if(canPan()){
+    x+=e.clientX-lastPan.clientX;
+    y+=e.clientY-lastPan.clientY;
+    update();
+  }
+  lastPan={clientX:e.clientX,clientY:e.clientY};
+} if(pointers.size===2){const p=[...pointers.values()],nd=dist(p[0],p[1]),nm=mid(p[0],p[1]),r=viewer.getBoundingClientRect();if(lastPinchDist&&lastPinchMid){
+  if(canPan()){
+    x+=nm.clientX-lastPinchMid.clientX;
+    y+=nm.clientY-lastPinchMid.clientY;
+  }
+  setScaleAround(scale*(nd/lastPinchDist),nm.clientX-r.left,nm.clientY-r.top);
+}lastPinchDist=nd;lastPinchMid=nm}});
 function endp(e){pointers.delete(e.pointerId);if(pointers.size===1){const p=[...pointers.values()][0];lastPan={clientX:p.clientX,clientY:p.clientY}}else{lastPan=null;lastPinchDist=null;lastPinchMid=null}}
 viewer.addEventListener('pointerup',endp);viewer.addEventListener('pointercancel',endp);
 document.querySelectorAll('.marker').forEach(m=>m.onclick=e=>{e.stopPropagation();selectZone(Number(m.dataset.id),false);});
