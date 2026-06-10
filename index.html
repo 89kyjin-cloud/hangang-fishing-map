@@ -36,6 +36,37 @@ header h1{font-size:18px;margin:0;white-space:nowrap} header span{font-size:12px
  .hotspot{width:56px;height:56px;margin:-28px 0 0 -28px}
  .gpsToast{right:12px;top:66px;width:calc(100vw - 24px)}
 }
+
+.userMarker{
+  display:none;
+  position:absolute;
+  width:26px;
+  height:26px;
+  margin:-13px 0 0 -13px;
+  border-radius:50%;
+  background:#1677ff;
+  border:4px solid #fff;
+  box-shadow:0 0 0 4px rgba(22,119,255,.25),0 4px 14px rgba(0,0,0,.35);
+  z-index:35;
+  pointer-events:none;
+}
+.userMarker::after{
+  content:"";
+  position:absolute;
+  left:50%;
+  top:50%;
+  width:52px;
+  height:52px;
+  margin:-26px 0 0 -26px;
+  border-radius:50%;
+  background:rgba(22,119,255,.14);
+  animation:pulse 1.8s infinite;
+}
+@keyframes pulse{
+  0%{transform:scale(.65);opacity:.9}
+  100%{transform:scale(1.4);opacity:0}
+}
+
 </style>
 </head>
 <body>
@@ -65,12 +96,13 @@ header h1{font-size:18px;margin:0;white-space:nowrap} header span{font-size:12px
 <button class="hotspot" data-id="16" style="left:830px;top:829px" aria-label="16번 구역 설명"></button>
 <button class="hotspot" data-id="15" style="left:854px;top:783px" aria-label="15번 구역 설명"></button>
 <button class="hotspot" data-id="15" style="left:874px;top:785px" aria-label="15번 구역 설명"></button>
-<button class="hotspot" data-id="3" style="left:924px;top:668px" aria-label="3번 구역 설명"></button>
-<button class="hotspot" data-id="4" style="left:963px;top:668px" aria-label="4번 구역 설명"></button>
+<button class="hotspot" data-id="4" style="left:924px;top:668px" aria-label="4번 구역 설명"></button>
+    <button class="hotspot" data-id="3" style="left:963px;top:668px" aria-label="3번 구역 설명"></button>
 <button class="hotspot" data-id="5" style="left:888px;top:710px" aria-label="5번 구역 설명"></button>
 <button class="hotspot" data-id="2" style="left:1105px;top:727px" aria-label="2번 구역 설명"></button>
 <button class="hotspot" data-id="1" style="left:1207px;top:727px" aria-label="1번 구역 설명"></button>
 <button class="hotspot" data-id="14" style="left:1224px;top:783px" aria-label="14번 구역 설명"></button>
+  <div id="userMarker" class="userMarker" aria-label="현재 위치"></div>
   </div>
   <div class="tip"><b>사용 방법</b><br>지도에 있는 분홍색 번호를 누르면 해당 구역 설명이 표시됩니다.</div>
   <button class="mapLocateBtn" onclick="locateOnce()">📍 내 위치</button>
@@ -79,7 +111,7 @@ header h1{font-size:18px;margin:0;white-space:nowrap} header span{font-size:12px
   <div id="gpsToast" class="gpsToast"></div>
 </main>
 <script>
-const zones=[{"id": 1, "name": "뚝섬 1지역", "desc": "자양2동 잠실수중보 ~ 청담대교 상류 670m 사이의 한강호안 및 내수면", "lat": 37.5249, "lng": 127.0715, "r": 550}, {"id": 2, "name": "뚝섬 2지역", "desc": "청담대교 북단 상류 450m ~ 성수동 영동대교 북단 하류 710m 사이의 한강호안 및 내수면", "lat": 37.5282, "lng": 127.05, "r": 750}, {"id": 3, "name": "뚝섬 3지역", "desc": "서울숲 회전 고가시설 ~ 중랑천 합류부 사이의 한강호안 및 내수면", "lat": 37.5383, "lng": 127.0352, "r": 700}, {"id": 4, "name": "이촌 1지역", "desc": "중랑천 합류부 ~ 동호대교 북단 하류 300m 사이의 한강호안 및 내수면", "lat": 37.533, "lng": 127.0202, "r": 500}, {"id": 5, "name": "이촌 2지역", "desc": "동호대교 북단 하류 800m ~ 한남대교 북단 상류 380m 사이의 한강호안 및 내수면(전망로 포함)", "lat": 37.5272, "lng": 127.006, "r": 700}, {"id": 6, "name": "이촌 3지역", "desc": "노들섬 전체, 한강대교 북단 상류 900m(거북선 선착장) ~ 한강대교 북단 교량 사이의 한강호안 및 내수면", "lat": 37.5167, "lng": 126.9597, "r": 850}, {"id": 7, "name": "밤섬지역", "desc": "밤섬 전체 및 마포대교 북단 상류 650m ~ 당산철교 북단 상류 500m 사이의 한강호안 및 내수면", "lat": 37.5346, "lng": 126.9166, "r": 1100}, {"id": 8, "name": "망원 1지역", "desc": "양화대교 북단 교량 ~ 합정동 양화대교 북단 하류 550m 사이의 한강호안 및 내수면", "lat": 37.5428, "lng": 126.904, "r": 650}, {"id": 9, "name": "망원 2지역", "desc": "성산대교 북단 상류 600m 교량 ~ 홍제천 합류부 사이의 한강호안 및 내수면", "lat": 37.5525, "lng": 126.8933, "r": 800}, {"id": 10, "name": "망원 3지역", "desc": "당산철교 북단 상류 500m ~ 당산철교 북단 교량 사이의 한강호안 및 내수면", "lat": 37.5378, "lng": 126.9067, "r": 450}, {"id": 11, "name": "난지 1지역", "desc": "홍제천교 ~ 성산대교 북단 하류 1,300m(조정면허시험장 하류 50m) 사이의 한강호안 및 내수면", "lat": 37.5625, "lng": 126.879, "r": 950}, {"id": 12, "name": "난지 2지역", "desc": "가양대교 북단 상류 800m(난지캠핑장 끝 호안 하류 측) ~ 가양대교 북단 하류 450m 사이의 한강호안 및 내수면(생태습지원 엄격한 내수면 포함)", "lat": 37.5715, "lng": 126.8527, "r": 950}, {"id": 13, "name": "난지 3지역", "desc": "월드컵대교 북단 하류 750m ~ 월드컵대교 북단 하류 900m 사이의 한강호안 및 내수면", "lat": 37.5585, "lng": 126.881, "r": 300}, {"id": 14, "name": "잠실지역", "desc": "잠실5동 잠실수중보 ~ 잠실수중보 하류 1,300m 사이의 한강호안 및 내수면", "lat": 37.5185, "lng": 127.1042, "r": 1200}, {"id": 15, "name": "잠원1지역", "desc": "동호대교 남단 하류 300m(리버시티) ~ 한남대교 남단 하류 1,000m(요트클럽 하류 100m) 사이의 한강호안 및 내수면", "lat": 37.5187, "lng": 127.0137, "r": 1000}, {"id": 16, "name": "반포 1지역", "desc": "반포동 반포대교 남단 상류 200m(전망데크) ~ 하류 500m(임시선착장) 사이의 한강호안 및 내수면", "lat": 37.512, "lng": 126.995, "r": 550}, {"id": 17, "name": "반포 2지역", "desc": "동작대교 남단 상류 450m(서래섬 하류 100m) ~ 동작대교 남단 하류 280m 사이의 한강호안 및 내수면", "lat": 37.5107, "lng": 126.9785, "r": 600}, {"id": 18, "name": "흑석지역", "desc": "한강대교 남단 상류 1,360m(한강현대아파트 114동 앞) ~ 본동 한강철교 남단 상류 400m 사이의 한강호안 및 내수면", "lat": 37.5077, "lng": 126.956, "r": 900}, {"id": 19, "name": "여의도 1지역", "desc": "원효대교 남단 상류 430m ~ 서강대교 남단 하류 370m 사이의 한강호안 및 내수면", "lat": 37.5263, "lng": 126.935, "r": 850}, {"id": 20, "name": "여의도 2지역", "desc": "여의도동 샛강 내수면 전역(상·하류 합류부 및 연결한 내수면 포함)", "lat": 37.5188, "lng": 126.927, "r": 1000}, {"id": 21, "name": "양화 1지역", "desc": "당산철교 남단 상류 370m(여의도 샛강 하류 합류부) ~ 당산철교 남단 60m(해양소년단 수상훈련장)의 한강호안 및 내수면", "lat": 37.5327, "lng": 126.9062, "r": 450}, {"id": 22, "name": "양화 2지역", "desc": "선유도공원 전체 및 성산대교 남단 상류 600m ~ 안양천 합류부 상류 150m 사이의 한강호안 및 내수면", "lat": 37.542, "lng": 126.8958, "r": 1000}, {"id": 23, "name": "양화3, 강서 1지역", "desc": "염창동 안양천 합류부 하류 150m ~ 마곡철교 남단 하류 400m 사이의 한강호안 및 내수면", "lat": 37.555, "lng": 126.8515, "r": 1200}, {"id": 24, "name": "강서 2지역", "desc": "방화대교 남단 하류 50m ~ 행주대교 남단 상류 400m 사이의 한강호안 및 내수면", "lat": 37.585, "lng": 126.81, "r": 1200}];
+const zones=[{"id": 1, "name": "뚝섬 1지역", "desc": "자양2동 잠실수중보 ~ 청담대교 상류 670m 사이의 한강호안 및 내수면", "lat": 37.5249, "lng": 127.0715, "r": 1900}, {"id": 2, "name": "뚝섬 2지역", "desc": "청담대교 북단 상류 450m ~ 성수동 영동대교 북단 하류 710m 사이의 한강호안 및 내수면", "lat": 37.5282, "lng": 127.05, "r": 1600}, {"id": 3, "name": "뚝섬 3지역", "desc": "서울숲 회전 고가시설 ~ 중랑천 합류부 사이의 한강호안 및 내수면", "lat": 37.5383, "lng": 127.0352, "r": 700}, {"id": 4, "name": "이촌 1지역", "desc": "중랑천 합류부 ~ 동호대교 북단 하류 300m 사이의 한강호안 및 내수면", "lat": 37.533, "lng": 127.0202, "r": 500}, {"id": 5, "name": "이촌 2지역", "desc": "동호대교 북단 하류 800m ~ 한남대교 북단 상류 380m 사이의 한강호안 및 내수면(전망로 포함)", "lat": 37.5272, "lng": 127.006, "r": 700}, {"id": 6, "name": "이촌 3지역", "desc": "노들섬 전체, 한강대교 북단 상류 900m(거북선 선착장) ~ 한강대교 북단 교량 사이의 한강호안 및 내수면", "lat": 37.5167, "lng": 126.9597, "r": 850}, {"id": 7, "name": "밤섬지역", "desc": "밤섬 전체 및 마포대교 북단 상류 650m ~ 당산철교 북단 상류 500m 사이의 한강호안 및 내수면", "lat": 37.5346, "lng": 126.9166, "r": 1100}, {"id": 8, "name": "망원 1지역", "desc": "양화대교 북단 교량 ~ 합정동 양화대교 북단 하류 550m 사이의 한강호안 및 내수면", "lat": 37.5428, "lng": 126.904, "r": 650}, {"id": 9, "name": "망원 2지역", "desc": "성산대교 북단 상류 600m 교량 ~ 홍제천 합류부 사이의 한강호안 및 내수면", "lat": 37.5525, "lng": 126.8933, "r": 800}, {"id": 10, "name": "망원 3지역", "desc": "당산철교 북단 상류 500m ~ 당산철교 북단 교량 사이의 한강호안 및 내수면", "lat": 37.5378, "lng": 126.9067, "r": 450}, {"id": 11, "name": "난지 1지역", "desc": "홍제천교 ~ 성산대교 북단 하류 1,300m(조정면허시험장 하류 50m) 사이의 한강호안 및 내수면", "lat": 37.5625, "lng": 126.879, "r": 950}, {"id": 12, "name": "난지 2지역", "desc": "가양대교 북단 상류 800m(난지캠핑장 끝 호안 하류 측) ~ 가양대교 북단 하류 450m 사이의 한강호안 및 내수면(생태습지원 엄격한 내수면 포함)", "lat": 37.5715, "lng": 126.8527, "r": 950}, {"id": 13, "name": "난지 3지역", "desc": "월드컵대교 북단 하류 750m ~ 월드컵대교 북단 하류 900m 사이의 한강호안 및 내수면", "lat": 37.5585, "lng": 126.881, "r": 300}, {"id": 14, "name": "잠실지역", "desc": "잠실5동 잠실수중보 ~ 잠실수중보 하류 1,300m 사이의 한강호안 및 내수면", "lat": 37.5185, "lng": 127.1042, "r": 2600}, {"id": 15, "name": "잠원1지역", "desc": "동호대교 남단 하류 300m(리버시티) ~ 한남대교 남단 하류 1,000m(요트클럽 하류 100m) 사이의 한강호안 및 내수면", "lat": 37.5187, "lng": 127.0137, "r": 1000}, {"id": 16, "name": "반포 1지역", "desc": "반포동 반포대교 남단 상류 200m(전망데크) ~ 하류 500m(임시선착장) 사이의 한강호안 및 내수면", "lat": 37.512, "lng": 126.995, "r": 550}, {"id": 17, "name": "반포 2지역", "desc": "동작대교 남단 상류 450m(서래섬 하류 100m) ~ 동작대교 남단 하류 280m 사이의 한강호안 및 내수면", "lat": 37.5107, "lng": 126.9785, "r": 600}, {"id": 18, "name": "흑석지역", "desc": "한강대교 남단 상류 1,360m(한강현대아파트 114동 앞) ~ 본동 한강철교 남단 상류 400m 사이의 한강호안 및 내수면", "lat": 37.5077, "lng": 126.956, "r": 900}, {"id": 19, "name": "여의도 1지역", "desc": "원효대교 남단 상류 430m ~ 서강대교 남단 하류 370m 사이의 한강호안 및 내수면", "lat": 37.5263, "lng": 126.935, "r": 850}, {"id": 20, "name": "여의도 2지역", "desc": "여의도동 샛강 내수면 전역(상·하류 합류부 및 연결한 내수면 포함)", "lat": 37.5188, "lng": 126.927, "r": 1000}, {"id": 21, "name": "양화 1지역", "desc": "당산철교 남단 상류 370m(여의도 샛강 하류 합류부) ~ 당산철교 남단 60m(해양소년단 수상훈련장)의 한강호안 및 내수면", "lat": 37.5327, "lng": 126.9062, "r": 450}, {"id": 22, "name": "양화 2지역", "desc": "선유도공원 전체 및 성산대교 남단 상류 600m ~ 안양천 합류부 상류 150m 사이의 한강호안 및 내수면", "lat": 37.542, "lng": 126.8958, "r": 1000}, {"id": 23, "name": "양화3, 강서 1지역", "desc": "염창동 안양천 합류부 하류 150m ~ 마곡철교 남단 하류 400m 사이의 한강호안 및 내수면", "lat": 37.555, "lng": 126.8515, "r": 1200}, {"id": 24, "name": "강서 2지역", "desc": "방화대교 남단 하류 50m ~ 행주대교 남단 상류 400m 사이의 한강호안 및 내수면", "lat": 37.585, "lng": 126.81, "r": 1200}];
 const viewer=document.getElementById('viewer'), stage=document.getElementById('stage');
 let scale=.68,x=0,y=0,baseScale=.68;
 const pointers=new Map(); let lastPan=null,lastPinchDist=null,lastPinchMid=null;
@@ -106,7 +138,67 @@ document.querySelectorAll('.hotspot').forEach(btn=>{
 
 function hav(a,b,c,d){const R=6371000,toRad=Math.PI/180;let p1=a*toRad,p2=c*toRad,dp=(c-a)*toRad,dl=(d-b)*toRad;let h=Math.sin(dp/2)**2+Math.cos(p1)*Math.cos(p2)*Math.sin(dl/2)**2;return 2*R*Math.asin(Math.sqrt(h))}
 function nearest(lat,lng){return zones.map(z=>({...z,dist:hav(lat,lng,z.lat,z.lng)})).sort((a,b)=>a.dist-b.dist)[0]}
-function showLocation(pos){const lat=pos.coords.latitude,lng=pos.coords.longitude,acc=pos.coords.accuracy||0;const n=nearest(lat,lng);const inside=n.dist<n.r,near=n.dist<n.r+120;const result=inside?'🔴 금지구역 안 또는 매우 가까운 것으로 추정됩니다.':near?'🟠 금지구역 경계 근처로 추정됩니다.':'🟢 금지구역 밖으로 추정됩니다.';const toast=document.getElementById('gpsToast');toast.innerHTML=`<b>${result}</b><br>좌표: ${lat.toFixed(6)}, ${lng.toFixed(6)} / 정확도 ±${Math.round(acc)}m<br>가장 가까운 구역: <b>${n.name}</b> · 약 ${Math.round(n.dist)}m<br><small>※ GPS는 보조 판정입니다.</small>`;toast.style.display='block';clearTimeout(window.__gpsTimer);window.__gpsTimer=setTimeout(()=>toast.style.display='none',7000);}
+
+// GPS 좌표를 원본 지도 이미지 좌표로 대략 변환합니다.
+// 현재 위치 마커 표시용이며, GPS 판정은 보조용입니다.
+function geoToImage(lat, lng){
+  const anchors = [
+    {lat:37.5850,lng:126.8100,x:72,y:423},
+    {lat:37.5715,lng:126.8527,x:284,y:506},
+    {lat:37.5428,lng:126.9040,x:442,y:623},
+    {lat:37.5346,lng:126.9166,x:583,y:672},
+    {lat:37.5167,lng:126.9597,x:679,y:774},
+    {lat:37.5187,lng:127.0137,x:854,y:783},
+    {lat:37.5282,lng:127.0500,x:1105,y:727},
+    {lat:37.5249,lng:127.0715,x:1207,y:727},
+    {lat:37.5185,lng:127.1042,x:1224,y:783}
+  ];
+  let sx=0, sy=0, sw=0;
+  for(const a of anchors){
+    const d=Math.max(0.000001, Math.hypot(lat-a.lat, lng-a.lng));
+    const w=1/(d*d);
+    sx+=a.x*w; sy+=a.y*w; sw+=w;
+  }
+  return {x:sx/sw, y:sy/sw};
+}
+
+function showUserMarker(lat,lng){
+  const p=geoToImage(lat,lng);
+  const m=document.getElementById('userMarker');
+  if(!m) return;
+  m.style.left=p.x+'px';
+  m.style.top=p.y+'px';
+  m.style.display='block';
+}
+
+// 광나루·잠실·뚝섬 일대는 중심점 거리만으로 오판정될 수 있어 보정합니다.
+function correctedNearest(lat,lng){
+  let n = nearest(lat,lng);
+
+  // 광나루 한강공원 ~ 잠실대교/잠실수중보 주변 보정
+  if(lat >= 37.505 && lat <= 37.555 && lng >= 127.065 && lng <= 127.135){
+    const z14 = zones.find(z=>z.id===14);
+    const z1 = zones.find(z=>z.id===1);
+    const d14 = z14 ? hav(lat,lng,z14.lat,z14.lng) : Infinity;
+    const d1 = z1 ? hav(lat,lng,z1.lat,z1.lng) : Infinity;
+    if(z14 && d14 <= 3600) return {...z14, dist:d14, forcedInside:true};
+    if(z1 && d1 <= 2600) return {...z1, dist:d1, forcedInside:true};
+  }
+
+  // 청담대교~영동대교~뚝섬 주변 보정
+  if(lat >= 37.515 && lat <= 37.545 && lng >= 127.035 && lng <= 127.080){
+    const z2 = zones.find(z=>z.id===2);
+    const z1 = zones.find(z=>z.id===1);
+    const d2 = z2 ? hav(lat,lng,z2.lat,z2.lng) : Infinity;
+    const d1 = z1 ? hav(lat,lng,z1.lat,z1.lng) : Infinity;
+    if(z2 && d2 <= 2300) return {...z2, dist:d2, forcedInside:true};
+    if(z1 && d1 <= 2300) return {...z1, dist:d1, forcedInside:true};
+  }
+
+  return n;
+}
+
+function showLocation(pos){const lat=pos.coords.latitude,lng=pos.coords.longitude,acc=pos.coords.accuracy||0;showUserMarker(lat,lng);const n=correctedNearest(lat,lng);const inside=(n.forcedInside===true)||n.dist<n.r,near=n.dist<n.r+120;const result=inside?'🔴 금지구역 안 또는 매우 가까운 것으로 추정됩니다.':near?'🟠 금지구역 경계 근처로 추정됩니다.':'🟢 금지구역 밖으로 추정됩니다.';const toast=document.getElementById('gpsToast');toast.innerHTML=`<b>${result}</b><br>좌표: ${lat.toFixed(6)}, ${lng.toFixed(6)} / 정확도 ±${Math.round(acc)}m<br>가장 가까운 구역: <b>${n.name}</b> · 약 ${Math.round(n.dist)}m<br><small>※ GPS는 보조 판정입니다. 현장 표지·통제가 우선입니다.</small>`;toast.style.display='block';clearTimeout(window.__gpsTimer);window.__gpsTimer=setTimeout(()=>toast.style.display='none',7000);}
 function locateOnce(){if(!navigator.geolocation){alert('이 브라우저는 GPS를 지원하지 않습니다.');return}const toast=document.getElementById('gpsToast');toast.textContent='위치 확인 중입니다. 권한 요청이 뜨면 허용을 눌러주세요.';toast.style.display='block';navigator.geolocation.getCurrentPosition(showLocation,e=>{toast.innerHTML='<b>위치 확인 실패</b><br>'+e.message+'<br>Safari 설정에서 위치 접근을 허용하세요.'},{enableHighAccuracy:true,timeout:12000,maximumAge:0})}
 
 function dist(a,b){return Math.hypot(a.clientX-b.clientX,a.clientY-b.clientY)}
