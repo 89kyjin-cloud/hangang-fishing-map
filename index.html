@@ -129,7 +129,7 @@ document.querySelectorAll('.hotspot').forEach(b=>b.onclick=e=>{e.stopPropagation
 function renderList(){const l=document.getElementById('zoneList');l.innerHTML='';zones.forEach(z=>{const d=document.createElement('div');d.className='zoneItem';d.innerHTML=`<b>${z.id}. ${z.name}</b><br><small>${z.desc}</small>`;d.onclick=()=>{togglePanel(false);showPopup(z.id)};l.appendChild(d)})}
 function togglePanel(force){const p=document.getElementById('zonePanel');p.style.display=force===false?'none':(p.style.display==='block'?'none':'block')}
 
-function locateMe(){const st=document.getElementById('status');if(!navigator.geolocation){st.innerHTML='GPS를 지원하지 않습니다.';return}st.innerHTML='📍 위치 확인 중입니다. 권한 요청이 뜨면 허용을 눌러주세요.';navigator.geolocation.getCurrentPosition(pos=>{const lat=pos.coords.latitude,lng=pos.coords.longitude,acc=pos.coords.accuracy||0,n=nearest(lat,lng),pt=geoToImage(lat,lng),m=document.getElementById('userMarker');m.style.left=pt.x+'px';m.style.top=pt.y+'px';m.style.display='block';scale=Math.max(scale,baseScale*2.2);x=viewer.clientWidth/2-pt.x*scale;y=viewer.clientHeight/2-pt.y*scale;update();st.innerHTML=`📍 <b>현재 위치 표시 완료 <span id="zoneStatusText">(허가구역)</span></b><br>가장 가까운 공식 구역: <b>${n.id}. ${n.name}</b><br>거리: 약 ${Math.round(n.dist)}m / GPS 정확도: ±${Math.round(acc)}m<br>좌표: ${lat.toFixed(6)}, ${lng.toFixed(6)}<br><small>※ 원본 지도 위 위치 표시는 보조용입니다. 현장 표지·통제선·최신 고시가 우선입니다.</small>`},e=>{st.innerHTML='<b>위치 확인 실패</b><br>'+e.message},{enableHighAccuracy:true,timeout:15000,maximumAge:0})}
+function locateMe(){const st=document.getElementById('status');if(!navigator.geolocation){st.innerHTML='GPS를 지원하지 않습니다.';return}st.innerHTML='📍 위치 확인 중입니다. 권한 요청이 뜨면 허용을 눌러주세요.';navigator.geolocation.getCurrentPosition(pos=>{const lat=pos.coords.latitude,lng=pos.coords.longitude,acc=pos.coords.accuracy||0,n=nearest(lat,lng),pt=geoToImage(lat,lng),m=document.getElementById('userMarker');m.style.left=pt.x+'px';m.style.top=pt.y+'px';m.style.display='block';scale=Math.max(scale,baseScale*2.2);x=viewer.clientWidth/2-pt.x*scale;y=viewer.clientHeight/2-pt.y*scale;update();st.innerHTML=`📍 <b>현재 위치 표시 완료</b><br>가장 가까운 공식 구역: <b>${n.id}. ${n.name}</b><br>거리: 약 ${Math.round(n.dist)}m / GPS 정확도: ±${Math.round(acc)}m<br>좌표: ${lat.toFixed(6)}, ${lng.toFixed(6)}<br><small>※ 원본 지도 위 위치 표시는 보조용입니다. 현장 표지·통제선·최신 고시가 우선입니다.</small>`},e=>{st.innerHTML='<b>위치 확인 실패</b><br>'+e.message},{enableHighAccuracy:true,timeout:15000,maximumAge:0})}
 
 
 // iOS Safari 기본 확대 제스처가 커스텀 지도 조작과 충돌하지 않도록 보조 차단
@@ -245,18 +245,45 @@ window.addEventListener('resize',resetView);
 renderList();resetView();
 </script>
 
+
+
+
 <script>
 (function(){
-  function updateZoneLabelFallback(){
+  function applyGpsZoneLabel(){
     const status = document.querySelector('.status');
     if(!status) return;
-    const html = status.innerHTML;
+
+    let html = status.innerHTML;
     if(!html.includes('현재 위치 표시 완료')) return;
-    if(html.includes('(금지구역)') || html.includes('(허가구역)')) return;
-    const isNearOfficialZone = html.includes('가장 가까운 공식 구역');
-    status.innerHTML = html.replace('현재 위치 표시 완료', '현재 위치 표시 완료 ' + (isNearOfficialZone ? '(금지구역)' : '(허가구역)'));
+
+    // 기존 표시 제거 후 재판정
+    html = html
+      .replace('현재 위치 표시 완료 (금지구역)', '현재 위치 표시 완료')
+      .replace('현재 위치 표시 완료 (허가구역)', '현재 위치 표시 완료');
+
+    // 이 지도 앱의 GPS 결과는 가까운 금지구역을 "가장 가까운 공식 구역"으로 표시함.
+    // 해당 문구가 있으면 금지구역으로, 없으면 허가구역으로 표시.
+    const isForbidden =
+      html.includes('가장 가까운 공식 구역') ||
+      html.includes('공식 구역') ||
+      html.includes('잠실지역') ||
+      html.includes('자양지역') ||
+      html.includes('뚝섬') ||
+      html.includes('이촌') ||
+      html.includes('여의도') ||
+      html.includes('반포') ||
+      html.includes('난지') ||
+      html.includes('망원') ||
+      html.includes('양화') ||
+      html.includes('잠원') ||
+      html.includes('광나루');
+
+    const label = isForbidden ? '(금지구역)' : '(허가구역)';
+    status.innerHTML = html.replace('현재 위치 표시 완료', '현재 위치 표시 완료 ' + label);
   }
-  setInterval(updateZoneLabelFallback, 500);
+
+  setInterval(applyGpsZoneLabel, 400);
 })();
 </script>
 
