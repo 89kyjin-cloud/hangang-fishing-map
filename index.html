@@ -13,9 +13,9 @@ header h1{font-size:17px;margin:0;white-space:nowrap} header span{font-size:12px
 #viewer{position:relative;width:100vw;height:calc(100vh - 54px);overflow:hidden;background:#f4f6f2;touch-action:none;overscroll-behavior:none}
 #stage{position:absolute;left:0;top:0;transform-origin:0 0;will-change:transform}
 #mapImg{width:1536px;height:1024px;display:block;image-rendering:auto;filter:contrast(1.04) saturate(1.04) brightness(1.01);user-select:none;-webkit-user-drag:none;backface-visibility:hidden;transform:translateZ(0)}
-.hotspot{position:absolute;width:52px;height:52px;margin:-26px 0 0 -26px;border:0;border-radius:50%;background:transparent;z-index:20;cursor:pointer;color:#fff;font-weight:900;font-size:13px;line-height:1}
-.hotspot::after{content:attr(data-id);position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--pink);border:2px solid #fff;box-shadow:0 2px 8px #0005;text-shadow:0 1px 2px #0006}
-.hotspot:active::after{transform:translate(-50%,-50%) scale(.92);background:#c70058}
+.hotspot{position:absolute;width:52px;height:52px;margin:-26px 0 0 -26px;border:0;border-radius:50%;background:transparent;z-index:20;cursor:pointer}
+
+
 .userMarker{display:none;position:absolute;width:16px;height:16px;margin:-8px 0 0 -8px;border-radius:50%;background:var(--blue);border:3px solid white;box-shadow:0 0 0 7px rgba(22,119,255,.2),0 3px 12px #0005;z-index:30}
 .popup{display:none;position:absolute;right:14px;top:66px;z-index:80;width:min(430px,calc(100vw - 28px));background:rgba(255,255,255,.98);border:1px solid #ddd;border-radius:16px;box-shadow:0 8px 28px #0003;padding:14px 44px 14px 14px;line-height:1.5;font-size:14px}
 .popup b{color:var(--pink)} .popup button{position:absolute;right:9px;top:9px;border:1px solid #ddd;background:white;color:var(--green);border-radius:8px;width:30px;height:30px;font-weight:900}
