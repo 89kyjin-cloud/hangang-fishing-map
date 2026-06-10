@@ -10,9 +10,9 @@
 html,body{margin:0;height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans KR",Arial,sans-serif;background:#eef1eb;color:#111}
 header{height:54px;background:linear-gradient(90deg,var(--green),var(--green2));color:#fff;display:flex;align-items:center;justify-content:space-between;padding:0 14px;box-shadow:0 2px 10px #0002;z-index:50;position:relative}
 header h1{font-size:17px;margin:0;white-space:nowrap} header span{font-size:12px;opacity:.9}
-#viewer{position:relative;width:100vw;height:calc(100vh - 54px);overflow:hidden;background:#f4f6f2;touch-action:none}
+#viewer{position:relative;width:100vw;height:calc(100vh - 54px);overflow:hidden;background:#f4f6f2;touch-action:none;overscroll-behavior:none}
 #stage{position:absolute;left:0;top:0;transform-origin:0 0;will-change:transform}
-#mapImg{width:1536px;height:1024px;display:block;image-rendering:auto;filter:contrast(1.02) saturate(1.02)}
+#mapImg{width:1536px;height:1024px;display:block;image-rendering:auto;filter:contrast(1.02) saturate(1.02);user-select:none;-webkit-user-drag:none}
 .hotspot{position:absolute;width:52px;height:52px;margin:-26px 0 0 -26px;border:0;border-radius:50%;background:transparent;z-index:20;cursor:pointer}
 .hotspot:active{background:rgba(255,216,77,.25)}
 .userMarker{display:none;position:absolute;width:16px;height:16px;margin:-8px 0 0 -8px;border-radius:50%;background:var(--blue);border:3px solid white;box-shadow:0 0 0 7px rgba(22,119,255,.2),0 3px 12px #0005;z-index:30}
@@ -109,10 +109,110 @@ function togglePanel(force){const p=document.getElementById('zonePanel');p.style
 
 function locateMe(){const st=document.getElementById('status');if(!navigator.geolocation){st.innerHTML='GPS를 지원하지 않습니다.';return}st.innerHTML='📍 위치 확인 중입니다. 권한 요청이 뜨면 허용을 눌러주세요.';navigator.geolocation.getCurrentPosition(pos=>{const lat=pos.coords.latitude,lng=pos.coords.longitude,acc=pos.coords.accuracy||0,n=nearest(lat,lng),pt=geoToImage(lat,lng),m=document.getElementById('userMarker');m.style.left=pt.x+'px';m.style.top=pt.y+'px';m.style.display='block';scale=Math.max(scale,baseScale*2.2);x=viewer.clientWidth/2-pt.x*scale;y=viewer.clientHeight/2-pt.y*scale;update();st.innerHTML=`📍 <b>현재 위치 표시 완료</b><br>가장 가까운 공식 구역: <b>${n.id}. ${n.name}</b><br>거리: 약 ${Math.round(n.dist)}m / GPS 정확도: ±${Math.round(acc)}m<br>좌표: ${lat.toFixed(6)}, ${lng.toFixed(6)}<br><small>※ 원본 지도 위 위치 표시는 보조용입니다. 현장 표지·통제선·최신 고시가 우선입니다.</small>`},e=>{st.innerHTML='<b>위치 확인 실패</b><br>'+e.message},{enableHighAccuracy:true,timeout:15000,maximumAge:0})}
 
-viewer.addEventListener('pointerdown',e=>{drag=true;last={x:e.clientX,y:e.clientY};viewer.setPointerCapture(e.pointerId)});
-viewer.addEventListener('pointermove',e=>{if(!drag)return;const dx=e.clientX-last.x,dy=e.clientY-last.y;last={x:e.clientX,y:e.clientY};if(scale>baseScale*1.05){x+=dx;y+=dy;update()}});
-viewer.addEventListener('pointerup',()=>drag=false);viewer.addEventListener('pointercancel',()=>drag=false);
-viewer.addEventListener('wheel',e=>{e.preventDefault();zoomBy(e.deltaY<0?1.18:.85)},{passive:false});
+// 모바일 제스처: 두 손가락 핀치 줌, 확대 시 드래그 이동, 더블탭 확대
+const pointers = new Map();
+let lastPan = null;
+let lastPinchDist = null;
+let lastPinchMid = null;
+let lastTapTime = 0;
+
+function canPan(){
+  return scale > baseScale * 1.05;
+}
+function clampScale(v){
+  return Math.max(baseScale, Math.min(8, v));
+}
+function setScaleAround(ns, cx, cy){
+  ns = clampScale(ns);
+  const mx = (cx - x) / scale;
+  const my = (cy - y) / scale;
+  scale = ns;
+  x = cx - mx * scale;
+  y = cy - my * scale;
+  update();
+}
+function dist(a,b){
+  return Math.hypot(a.clientX-b.clientX, a.clientY-b.clientY);
+}
+function mid(a,b){
+  return {clientX:(a.clientX+b.clientX)/2, clientY:(a.clientY+b.clientY)/2};
+}
+
+viewer.addEventListener('pointerdown', e => {
+  if(e.target.closest('button')) return;
+  viewer.setPointerCapture(e.pointerId);
+  pointers.set(e.pointerId, e);
+
+  if(pointers.size === 1){
+    lastPan = {clientX:e.clientX, clientY:e.clientY};
+
+    const now = Date.now();
+    if(now - lastTapTime < 300){
+      const r = viewer.getBoundingClientRect();
+      setScaleAround(scale < baseScale*1.7 ? baseScale*2.4 : baseScale, e.clientX-r.left, e.clientY-r.top);
+      lastTapTime = 0;
+    } else {
+      lastTapTime = now;
+    }
+  } else if(pointers.size === 2){
+    const p = [...pointers.values()];
+    lastPinchDist = dist(p[0], p[1]);
+    lastPinchMid = mid(p[0], p[1]);
+    lastPan = null;
+  }
+});
+
+viewer.addEventListener('pointermove', e => {
+  if(!pointers.has(e.pointerId)) return;
+  pointers.set(e.pointerId, e);
+
+  if(pointers.size === 1 && lastPan){
+    if(canPan()){
+      x += e.clientX - lastPan.clientX;
+      y += e.clientY - lastPan.clientY;
+      update();
+    }
+    lastPan = {clientX:e.clientX, clientY:e.clientY};
+  }
+
+  if(pointers.size === 2){
+    const p = [...pointers.values()];
+    const nd = dist(p[0], p[1]);
+    const nm = mid(p[0], p[1]);
+    const r = viewer.getBoundingClientRect();
+
+    if(lastPinchDist && lastPinchMid){
+      if(canPan()){
+        x += nm.clientX - lastPinchMid.clientX;
+        y += nm.clientY - lastPinchMid.clientY;
+      }
+      setScaleAround(scale * (nd / lastPinchDist), nm.clientX-r.left, nm.clientY-r.top);
+    }
+    lastPinchDist = nd;
+    lastPinchMid = nm;
+  }
+});
+
+function endPointer(e){
+  pointers.delete(e.pointerId);
+  if(pointers.size === 1){
+    const p = [...pointers.values()][0];
+    lastPan = {clientX:p.clientX, clientY:p.clientY};
+  } else {
+    lastPan = null;
+    lastPinchDist = null;
+    lastPinchMid = null;
+  }
+}
+viewer.addEventListener('pointerup', endPointer);
+viewer.addEventListener('pointercancel', endPointer);
+
+viewer.addEventListener('wheel', e => {
+  e.preventDefault();
+  const r = viewer.getBoundingClientRect();
+  setScaleAround(scale*(e.deltaY<0?1.18:.85), e.clientX-r.left, e.clientY-r.top);
+},{passive:false});
+
 window.addEventListener('resize',resetView);
 renderList();resetView();
 </script>
