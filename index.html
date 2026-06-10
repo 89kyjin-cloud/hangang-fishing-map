@@ -40,14 +40,14 @@ header h1{font-size:18px;margin:0;white-space:nowrap} header span{font-size:12px
 .userMarker{
   display:none;
   position:absolute;
-  width:18px;
-  height:18px;
-  margin:-9px 0 0 -9px;
+  width:16px;
+  height:16px;
+  margin:-8px 0 0 -8px;
   border-radius:50%;
-  background:#1677ff;
+  background:#0b7cff;
   border:3px solid #fff;
-  box-shadow:0 0 0 3px rgba(22,119,255,.25),0 3px 10px rgba(0,0,0,.35);
-  z-index:35;
+  box-shadow:0 0 0 3px rgba(11,124,255,.22),0 3px 10px rgba(0,0,0,.38);
+  z-index:40;
   pointer-events:none;
 }
 .userMarker::after{
@@ -59,9 +59,10 @@ header h1{font-size:18px;margin:0;white-space:nowrap} header span{font-size:12px
   height:34px;
   margin:-17px 0 0 -17px;
   border-radius:50%;
-  background:rgba(22,119,255,.14);
+  background:rgba(11,124,255,.13);
   animation:pulse 1.8s infinite;
 }
+
 @keyframes pulse{
   0%{transform:scale(.65);opacity:.9}
   100%{transform:scale(1.4);opacity:0}
@@ -142,39 +143,51 @@ function nearest(lat,lng){return zones.map(z=>({...z,dist:hav(lat,lng,z.lat,z.ln
 // GPS 좌표를 원본 지도 이미지 좌표로 대략 변환합니다.
 // 현재 위치 마커 표시용이며, GPS 판정은 보조용입니다.
 function geoToImage(lat, lng){
-  // 원본 이미지 기준 좌표 보정값.
-  // 특히 광나루 한강공원/광진교 부근은 기존 보간값이 청담대교 쪽으로 밀려서 별도 앵커를 추가했습니다.
-  const anchors = [
-    {lat:37.5850,lng:126.8100,x:72,y:423},     // 강서
-    {lat:37.5715,lng:126.8527,x:284,y:506},    // 난지2
-    {lat:37.5585,lng:126.8810,x:349,y:552},    // 난지3
-    {lat:37.5428,lng:126.9040,x:442,y:623},    // 망원
-    {lat:37.5346,lng:126.9166,x:583,y:672},    // 밤섬
-    {lat:37.5167,lng:126.9597,x:679,y:774},    // 이촌/노들
-    {lat:37.5187,lng:127.0137,x:854,y:783},    // 잠원
-    {lat:37.5282,lng:127.0500,x:1105,y:727},   // 뚝섬2
-    {lat:37.5249,lng:127.0715,x:1207,y:727},   // 뚝섬1
-    {lat:37.5185,lng:127.1042,x:1224,y:783},   // 잠실
-    {lat:37.5450,lng:127.1110,x:1375,y:565},   // 광나루 한강공원/광진교 북단 부근
-    {lat:37.5400,lng:127.1125,x:1325,y:615},   // 천호대교~광진교 사이
-    {lat:37.5350,lng:127.1150,x:1295,y:690}    // 광나루 남측 호안 보정
-  ];
+  // 원본 지도 이미지 좌표 보정.
+  // 광나루/광진교 부근은 기존 보간 방식에서 청담대교 쪽으로 밀려 별도 강제 보정합니다.
 
-  // 광나루 한강공원/광진교 주변은 지도 오른쪽 광나루 구간으로 강제 보정
-  if(lat >= 37.532 && lat <= 37.552 && lng >= 127.095 && lng <= 127.125){
-    const t = Math.max(0, Math.min(1, (lng - 127.095) / 0.030));
-    const u = Math.max(0, Math.min(1, (lat - 37.532) / 0.020));
+  // 광나루 한강공원 · 광진교 주변: 지도 오른쪽 광나루 위치로 직접 배치
+  if(lat >= 37.532 && lat <= 37.555 && lng >= 127.090 && lng <= 127.130){
+    // 광진교 주변 실제 위치를 지도 오른쪽 광나루 구간에 맞춤
+    const lngT = Math.max(0, Math.min(1, (lng - 127.090) / 0.040));
+    const latT = Math.max(0, Math.min(1, (lat - 37.532) / 0.023));
     return {
-      x: 1245 + t * 150,
-      y: 710 - u * 155
+      x: 1268 + lngT * 160,
+      y: 710 - latT * 145
     };
   }
 
+  // 잠실수중보~잠실대교 주변
+  if(lat >= 37.505 && lat <= 37.535 && lng >= 127.080 && lng < 127.100){
+    const lngT = Math.max(0, Math.min(1, (lng - 127.080) / 0.020));
+    const latT = Math.max(0, Math.min(1, (lat - 37.505) / 0.030));
+    return {
+      x: 1210 + lngT * 80,
+      y: 780 - latT * 70
+    };
+  }
+
+  // 일반 구간: 기준점 보간
+  const anchors = [
+    {lat:37.5850,lng:126.8100,x:72,y:423},
+    {lat:37.5715,lng:126.8527,x:284,y:506},
+    {lat:37.5428,lng:126.9040,x:442,y:623},
+    {lat:37.5346,lng:126.9166,x:583,y:672},
+    {lat:37.5167,lng:126.9597,x:679,y:774},
+    {lat:37.5187,lng:127.0137,x:854,y:783},
+    {lat:37.5282,lng:127.0500,x:1105,y:727},
+    {lat:37.5249,lng:127.0715,x:1207,y:727},
+    {lat:37.5185,lng:127.1042,x:1224,y:783},
+    {lat:37.5450,lng:127.1110,x:1370,y:570}
+  ];
+
   let sx=0, sy=0, sw=0;
   for(const a of anchors){
-    const d=Math.max(0.000001, Math.hypot((lat-a.lat)*1.25, (lng-a.lng)));
+    const d=Math.max(0.000001, Math.hypot((lat-a.lat)*1.4, (lng-a.lng)));
     const w=1/(d*d*d);
-    sx+=a.x*w; sy+=a.y*w; sw+=w;
+    sx+=a.x*w;
+    sy+=a.y*w;
+    sw+=w;
   }
   return {x:sx/sw, y:sy/sw};
 }
@@ -192,11 +205,17 @@ function showUserMarker(lat,lng){
 function correctedNearest(lat,lng){
   let n = nearest(lat,lng);
 
-  // 광나루 한강공원·광진교 부근: 사용자가 실제 광나루 한강공원에 있을 때
-  // 기존 중심점 거리 방식이 청담/뚝섬 방향으로 오판정되는 문제 보정
-  if(lat >= 37.532 && lat <= 37.552 && lng >= 127.095 && lng <= 127.125){
+  // 광나루 한강공원·광진교 부근은 실제 현장상 금지구역으로 우선 판정
+  if(lat >= 37.532 && lat <= 37.555 && lng >= 127.090 && lng <= 127.130){
     const z14 = zones.find(z=>z.id===14);
-    if(z14) return {...z14, dist:hav(lat,lng,z14.lat,z14.lng), forcedInside:true, placeName:'광나루 한강공원·광진교 부근'};
+    if(z14){
+      return {
+        ...z14,
+        dist:hav(lat,lng,z14.lat,z14.lng),
+        forcedInside:true,
+        placeName:'광나루 한강공원·광진교 부근'
+      };
+    }
   }
 
   // 잠실대교/잠실수중보 주변 보정
@@ -205,8 +224,8 @@ function correctedNearest(lat,lng){
     const z1 = zones.find(z=>z.id===1);
     const d14 = z14 ? hav(lat,lng,z14.lat,z14.lng) : Infinity;
     const d1 = z1 ? hav(lat,lng,z1.lat,z1.lng) : Infinity;
-    if(z14 && d14 <= 3600) return {...z14, dist:d14, forcedInside:true};
-    if(z1 && d1 <= 2600) return {...z1, dist:d1, forcedInside:true};
+    if(z14 && d14 <= 3800) return {...z14, dist:d14, forcedInside:true};
+    if(z1 && d1 <= 2800) return {...z1, dist:d1, forcedInside:true};
   }
 
   // 청담대교~영동대교~뚝섬 주변 보정
@@ -215,14 +234,14 @@ function correctedNearest(lat,lng){
     const z1 = zones.find(z=>z.id===1);
     const d2 = z2 ? hav(lat,lng,z2.lat,z2.lng) : Infinity;
     const d1 = z1 ? hav(lat,lng,z1.lat,z1.lng) : Infinity;
-    if(z2 && d2 <= 2300) return {...z2, dist:d2, forcedInside:true};
-    if(z1 && d1 <= 2300) return {...z1, dist:d1, forcedInside:true};
+    if(z2 && d2 <= 2400) return {...z2, dist:d2, forcedInside:true};
+    if(z1 && d1 <= 2400) return {...z1, dist:d1, forcedInside:true};
   }
 
   return n;
 }
 
-function showLocation(pos){const lat=pos.coords.latitude,lng=pos.coords.longitude,acc=pos.coords.accuracy||0;showUserMarker(lat,lng);const n=correctedNearest(lat,lng);const inside=(n.forcedInside===true)||n.dist<n.r,near=n.dist<n.r+120;const result=inside?'🔴 금지구역 안 또는 매우 가까운 것으로 추정됩니다.':near?'🟠 금지구역 경계 근처로 추정됩니다.':'🟢 금지구역 밖으로 추정됩니다.';const toast=document.getElementById('gpsToast');toast.innerHTML=`<b>${result}</b><br>좌표: ${lat.toFixed(6)}, ${lng.toFixed(6)} / 정확도 ±${Math.round(acc)}m<br>현재 위치: <b>${n.placeName||n.name}</b><br>판정 구역: <b>${n.name}</b> · 약 ${Math.round(n.dist)}m<br><small>※ GPS는 보조 판정입니다. 현장 표지·통제가 우선입니다.</small>`;toast.style.display='block';clearTimeout(window.__gpsTimer);window.__gpsTimer=setTimeout(()=>toast.style.display='none',7000);}
+function showLocation(pos){const lat=pos.coords.latitude,lng=pos.coords.longitude,acc=pos.coords.accuracy||0;showUserMarker(lat,lng);const n=correctedNearest(lat,lng);const inside=(n.forcedInside===true)||n.dist<n.r,near=n.dist<n.r+120;const result=inside?'🔴 금지구역 안 또는 매우 가까운 것으로 추정됩니다.':near?'🟠 금지구역 경계 근처로 추정됩니다.':'🟢 금지구역 밖으로 추정됩니다.';const toast=document.getElementById('gpsToast');toast.innerHTML=`<b>${result}</b><br>좌표: ${lat.toFixed(6)}, ${lng.toFixed(6)} / 정확도 ±${Math.round(acc)}m<br>현재 위치: <b>${n.placeName||n.name}</b><br>판정 구역: <b>${n.name}</b> · 약 ${Math.round(n.dist)}m<br><small>※ GPS는 보조 판정입니다. 현장 표지·통제가 우선입니다. 현장 표지·통제가 우선입니다.</small>`;toast.style.display='block';clearTimeout(window.__gpsTimer);window.__gpsTimer=setTimeout(()=>toast.style.display='none',7000);}
 function locateOnce(){if(!navigator.geolocation){alert('이 브라우저는 GPS를 지원하지 않습니다.');return}const toast=document.getElementById('gpsToast');toast.textContent='위치 확인 중입니다. 권한 요청이 뜨면 허용을 눌러주세요.';toast.style.display='block';navigator.geolocation.getCurrentPosition(showLocation,e=>{toast.innerHTML='<b>위치 확인 실패</b><br>'+e.message+'<br>Safari 설정에서 위치 접근을 허용하세요.'},{enableHighAccuracy:true,timeout:12000,maximumAge:0})}
 
 function dist(a,b){return Math.hypot(a.clientX-b.clientX,a.clientY-b.clientY)}
