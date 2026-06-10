@@ -111,95 +111,78 @@ function hav(a,b,c,d){const R=6371000,toRad=Math.PI/180,p1=a*toRad,p2=c*toRad,dp
 function nearest(lat,lng){return zones.map(z=>({...z,dist:hav(lat,lng,z.lat,z.lng)})).sort((a,b)=>a.dist-b.dist)[0]}
 
 function geoToImage(lat,lng){
-  // Web Mercator 기반 GIS 보정 방식
-  // 지도/구역 이미지는 원본 그대로 유지하고, GPS 위경도 → 이미지 좌표 변환만 개선합니다.
-  // anchors: 한강 주요 교량·권역 기준점의 실제 위경도와 원본 이미지 좌표를 매칭한 보정점입니다.
+  /*
+    GPS 개선 전용 함수
+    - 지도 이미지는 원본 그대로 유지
+    - 구역/설명/숫자/핫스팟은 수정하지 않음
+    - 실제 GPS 위경도를 원본 이미지 좌표로 변환하는 부분만 개선
+
+    방식:
+    1) Web Mercator 좌표로 변환
+    2) 한강 전 구간 기준점 기반 국지 보간
+    3) 광나루·광진교·천호대교 구간은 실제 화면 오차가 컸으므로 별도 세밀 보정
+  */
   const anchors=[
-    {name:"강서·개화",lat:37.5850,lng:126.8100,x:72,y:423},
+    {name:"강서2",lat:37.5850,lng:126.8100,x:72,y:423},
     {name:"가양대교",lat:37.5715,lng:126.8527,x:284,y:506},
+    {name:"월드컵대교",lat:37.5585,lng:126.8810,x:365,y:575},
     {name:"성산대교",lat:37.5428,lng:126.9040,x:442,y:623},
     {name:"양화대교",lat:37.5346,lng:126.9166,x:583,y:672},
-    {name:"마포·원효",lat:37.5280,lng:126.9450,x:662,y:735},
+    {name:"마포대교",lat:37.5263,lng:126.9350,x:642,y:730},
     {name:"한강대교",lat:37.5167,lng:126.9597,x:679,y:774},
-    {name:"동작대교",lat:37.5154,lng:126.9810,x:748,y:790},
-    {name:"반포대교",lat:37.5147,lng:126.9965,x:805,y:790},
+    {name:"동작대교",lat:37.5107,lng:126.9785,x:746,y:808},
+    {name:"반포대교",lat:37.5120,lng:126.9950,x:805,y:805},
     {name:"한남대교",lat:37.5187,lng:127.0137,x:854,y:783},
-    {name:"동호대교",lat:37.5250,lng:127.0340,x:980,y:755},
-    {name:"성수대교",lat:37.5350,lng:127.0470,x:1065,y:732},
+    {name:"동호대교",lat:37.5272,lng:127.0060,x:922,y:755},
+    {name:"중랑천합류부",lat:37.5383,lng:127.0352,x:980,y:724},
     {name:"영동대교",lat:37.5282,lng:127.0500,x:1105,y:727},
     {name:"청담대교",lat:37.5249,lng:127.0715,x:1207,y:727},
-    {name:"잠실대교",lat:37.5245,lng:127.0910,x:1295,y:685},
-    {name:"천호대교",lat:37.5450,lng:127.1110,x:1260,y:650},
-    {name:"광진교",lat:37.5465,lng:127.1160,x:1268,y:642},
+    {name:"잠실수중보",lat:37.5450,lng:127.1110,x:1218,y:702},
+    {name:"광진교북단",lat:37.5465,lng:127.1160,x:1260,y:655},
+    {name:"광진교남단",lat:37.5408,lng:127.1146,x:1264,y:704},
+    {name:"천호대교",lat:37.5443,lng:127.1210,x:1310,y:640},
     {name:"구리암사대교",lat:37.5520,lng:127.1225,x:1370,y:560}
   ];
 
-  function merc(lat,lng){
+  function merc(pLat,pLng){
     const R=6378137;
-    const x=R*lng*Math.PI/180;
-    const y=R*Math.log(Math.tan(Math.PI/4+(lat*Math.PI/180)/2));
-    return {x,y};
+    return {
+      x:R*pLng*Math.PI/180,
+      y:R*Math.log(Math.tan(Math.PI/4+(pLat*Math.PI/180)/2))
+    };
   }
 
   const p=merc(lat,lng);
-  const pts=anchors.map(a=>({a,m:merc(a.lat,a.lng)}));
+  const pts=anchors.map(a=>{
+    const m=merc(a.lat,a.lng);
+    const d=Math.max(1,Math.hypot(p.x-m.x,p.y-m.y));
+    return {a,m,d};
+  }).sort((u,v)=>u.d-v.d);
 
-  // 가까운 기준점 6개를 사용해 국지 affine 변환을 구성합니다.
-  pts.sort((u,v)=>{
-    const du=Math.hypot(p.x-u.m.x,p.y-u.m.y);
-    const dv=Math.hypot(p.x-v.m.x,p.y-v.m.y);
-    return du-dv;
+  // 가까운 기준점 5개만 사용해 원본 이미지의 왜곡을 국지적으로 맞춤
+  const selected=pts.slice(0,5);
+  let sx=0, sy=0, sw=0;
+  selected.forEach(({a,d})=>{
+    const w=1/(d*d);
+    sx+=a.x*w; sy+=a.y*w; sw+=w;
   });
+  let x=sx/sw, y=sy/sw;
 
-  const selected=pts.slice(0,6);
+  // 광나루·광진교 실제 사용 구간 세밀 보정
+  // 기존 표시가 구리암사대교 방향으로 치우치는 현상을 줄이기 위해
+  // 동쪽 끝 구간에서 서남쪽으로 국지 보정한다.
+  if(lng>=127.105 && lng<=127.126 && lat>=37.535 && lat<=37.555){
+    const eastFactor=Math.max(0,Math.min(1,(lng-127.105)/(127.126-127.105)));
+    const northFactor=Math.max(0,Math.min(1,(lat-37.535)/(37.555-37.535)));
 
-  // 가중 최소제곱 affine:
-  // imageX = A*mercX + B*mercY + C
-  // imageY = D*mercX + E*mercY + F
-  function solveAffine(valuesKey){
-    let M=[[0,0,0],[0,0,0],[0,0,0]];
-    let B=[0,0,0];
+    // 광진교 주변일수록 왼쪽/아래쪽으로 보정, 구리암사대교 쪽은 보정 약화
+    const local=(1-Math.abs(eastFactor-0.55)*1.6);
+    const strength=Math.max(0,Math.min(1,local))*(1-Math.max(0,northFactor-0.65));
 
-    selected.forEach(({a,m})=>{
-      const d=Math.max(1,Math.hypot(p.x-m.x,p.y-m.y));
-      const w=1/(d*d);
-      const row=[m.x,m.y,1];
-      const target=a[valuesKey];
-
-      for(let i=0;i<3;i++){
-        for(let j=0;j<3;j++) M[i][j]+=w*row[i]*row[j];
-        B[i]+=w*row[i]*target;
-      }
-    });
-
-    // 3x3 Gaussian elimination
-    for(let i=0;i<3;i++){
-      let max=i;
-      for(let r=i+1;r<3;r++) if(Math.abs(M[r][i])>Math.abs(M[max][i])) max=r;
-      [M[i],M[max]]=[M[max],M[i]];
-      [B[i],B[max]]=[B[max],B[i]];
-
-      const pivot=M[i][i] || 1e-12;
-      for(let c=i;c<3;c++) M[i][c]/=pivot;
-      B[i]/=pivot;
-
-      for(let r=0;r<3;r++){
-        if(r===i) continue;
-        const f=M[r][i];
-        for(let c=i;c<3;c++) M[r][c]-=f*M[i][c];
-        B[r]-=f*B[i];
-      }
-    }
-    return B;
+    x -= 70*strength;
+    y += 58*strength;
   }
 
-  const ax=solveAffine("x");
-  const ay=solveAffine("y");
-
-  let x=ax[0]*p.x+ax[1]*p.y+ax[2];
-  let y=ay[0]*p.x+ay[1]*p.y+ay[2];
-
-  // 원본 이미지 영역 밖으로 튀는 것을 방지
   x=Math.max(0,Math.min(1536,x));
   y=Math.max(0,Math.min(1024,y));
   return {x,y};
@@ -211,7 +194,92 @@ document.querySelectorAll('.hotspot').forEach(b=>b.onclick=e=>{e.stopPropagation
 function renderList(){const l=document.getElementById('zoneList');l.innerHTML='';zones.forEach(z=>{const d=document.createElement('div');d.className='zoneItem';d.innerHTML=`<b>${z.id}. ${z.name}</b><br><small>${z.desc}</small>`;d.onclick=()=>{togglePanel(false);showPopup(z.id)};l.appendChild(d)})}
 function togglePanel(force){const p=document.getElementById('zonePanel');p.style.display=force===false?'none':(p.style.display==='block'?'none':'block')}
 
-function locateMe(){const st=document.getElementById('status');if(!navigator.geolocation){st.innerHTML='GPS를 지원하지 않습니다.';return}st.innerHTML='📍 위치 확인 중입니다. 권한 요청이 뜨면 허용을 눌러주세요.';navigator.geolocation.getCurrentPosition(pos=>{const lat=pos.coords.latitude,lng=pos.coords.longitude,acc=pos.coords.accuracy||0,n=nearest(lat,lng),pt=geoToImage(lat,lng),m=document.getElementById('userMarker');m.style.left=pt.x+'px';m.style.top=pt.y+'px';m.style.display='block';scale=Math.max(scale,baseScale*2.2);x=viewer.clientWidth/2-pt.x*scale;y=viewer.clientHeight/2-pt.y*scale;update();st.innerHTML=`📍 <b>현재 위치 표시 완료</b><br>가장 가까운 공식 구역: <b>${n.id}. ${n.name}</b><br>거리: 약 ${Math.round(n.dist)}m / GPS 정확도: ±${Math.round(acc)}m<br>좌표: ${lat.toFixed(6)}, ${lng.toFixed(6)}<br><small>※ 원본 지도 위 위치 표시는 보조용입니다. 현장 표지·통제선·최신 고시가 우선입니다.</small>`},e=>{st.innerHTML='<b>위치 확인 실패</b><br>'+e.message},{enableHighAccuracy:true,timeout:15000,maximumAge:0})}
+function locateMe(){
+  const st=document.getElementById('status');
+  if(!navigator.geolocation){
+    st.innerHTML='GPS를 지원하지 않습니다.';
+    return;
+  }
+
+  st.innerHTML='📍 위치 확인 중입니다. 권한 요청이 뜨면 허용을 눌러주세요.<br><small>GPS 신호를 3초 동안 보정 중입니다.</small>';
+
+  const samples=[];
+  let finished=false;
+
+  function finish(){
+    if(finished || samples.length===0) return;
+    finished=true;
+
+    // 정확도 좋은 순서로 정렬 후 상위 샘플을 가중 평균
+    samples.sort((a,b)=>a.acc-b.acc);
+    const picked=samples.slice(0,Math.min(5,samples.length));
+
+    let sw=0, slat=0, slng=0, best=picked[0];
+    picked.forEach(s=>{
+      const w=1/Math.max(10,s.acc);
+      sw+=w; slat+=s.lat*w; slng+=s.lng*w;
+    });
+
+    const lat=slat/sw;
+    const lng=slng/sw;
+    const acc=best.acc;
+
+    const n=nearest(lat,lng);
+    const pt=geoToImage(lat,lng);
+    const m=document.getElementById('userMarker');
+
+    m.style.left=pt.x+'px';
+    m.style.top=pt.y+'px';
+    m.style.display='block';
+
+    scale=Math.max(scale,baseScale*2.2);
+    x=viewer.clientWidth/2-pt.x*scale;
+    y=viewer.clientHeight/2-pt.y*scale;
+    update();
+
+    st.innerHTML=`📍 <b>현재 위치 표시 완료</b><br>가장 가까운 공식 구역: <b>${n.id}. ${n.name}</b><br>거리: 약 ${Math.round(n.dist)}m / GPS 정확도: ±${Math.round(acc)}m<br>좌표: ${lat.toFixed(6)}, ${lng.toFixed(6)}<br><small>※ 원본 지도 위 위치 표시는 보조용입니다. 현장 표지·통제선·최신 고시가 우선입니다.</small>`;
+  }
+
+  const watchId=navigator.geolocation.watchPosition(pos=>{
+    const lat=pos.coords.latitude;
+    const lng=pos.coords.longitude;
+    const acc=pos.coords.accuracy||9999;
+    samples.push({lat,lng,acc,t:Date.now()});
+
+    st.innerHTML=`📍 위치 확인 중입니다.<br><small>GPS 보정 중... 수신 ${samples.length}회 / 현재 정확도 ±${Math.round(acc)}m</small>`;
+
+    // 정확도가 충분히 좋으면 바로 종료
+    if(samples.length>=3 && acc<=25){
+      navigator.geolocation.clearWatch(watchId);
+      finish();
+    }
+  },e=>{
+    if(samples.length>0){
+      finish();
+    }else{
+      st.innerHTML='<b>위치 확인 실패</b><br>'+e.message;
+    }
+  },{enableHighAccuracy:true,timeout:15000,maximumAge:0});
+
+  // 너무 오래 기다리지 않도록 3.5초 뒤 최적 샘플로 종료
+  setTimeout(()=>{
+    try{navigator.geolocation.clearWatch(watchId)}catch(e){}
+    if(samples.length>0) finish();
+    else{
+      navigator.geolocation.getCurrentPosition(pos=>{
+        samples.push({
+          lat:pos.coords.latitude,
+          lng:pos.coords.longitude,
+          acc:pos.coords.accuracy||9999,
+          t:Date.now()
+        });
+        finish();
+      },e=>{
+        st.innerHTML='<b>위치 확인 실패</b><br>'+e.message;
+      },{enableHighAccuracy:true,timeout:15000,maximumAge:0});
+    }
+  },3500);
+}
 
 
 // iOS Safari 기본 확대 제스처가 커스텀 지도 조작과 충돌하지 않도록 보조 차단
