@@ -111,18 +111,98 @@ function hav(a,b,c,d){const R=6371000,toRad=Math.PI/180,p1=a*toRad,p2=c*toRad,dp
 function nearest(lat,lng){return zones.map(z=>({...z,dist:hav(lat,lng,z.lat,z.lng)})).sort((a,b)=>a.dist-b.dist)[0]}
 
 function geoToImage(lat,lng){
+  // Web Mercator 기반 GIS 보정 방식
+  // 지도/구역 이미지는 원본 그대로 유지하고, GPS 위경도 → 이미지 좌표 변환만 개선합니다.
+  // anchors: 한강 주요 교량·권역 기준점의 실제 위경도와 원본 이미지 좌표를 매칭한 보정점입니다.
   const anchors=[
-    {lat:37.585,lng:126.810,x:72,y:423},{lat:37.5715,lng:126.8527,x:284,y:506},
-    {lat:37.5428,lng:126.9040,x:442,y:623},{lat:37.5346,lng:126.9166,x:583,y:672},
-    {lat:37.5167,lng:126.9597,x:679,y:774},{lat:37.5187,lng:127.0137,x:854,y:783},
-    {lat:37.5282,lng:127.0500,x:1105,y:727},{lat:37.5249,lng:127.0715,x:1207,y:727},
-    // 광나루·광진교 권역 GPS 보정점: 기존 표시가 구리암사대교 방향으로 치우쳐 보이는 문제 보정
-    {lat:37.5450,lng:127.1110,x:1260,y:650},
-    {lat:37.5465,lng:127.1160,x:1268,y:642}
+    {name:"강서·개화",lat:37.5850,lng:126.8100,x:72,y:423},
+    {name:"가양대교",lat:37.5715,lng:126.8527,x:284,y:506},
+    {name:"성산대교",lat:37.5428,lng:126.9040,x:442,y:623},
+    {name:"양화대교",lat:37.5346,lng:126.9166,x:583,y:672},
+    {name:"마포·원효",lat:37.5280,lng:126.9450,x:662,y:735},
+    {name:"한강대교",lat:37.5167,lng:126.9597,x:679,y:774},
+    {name:"동작대교",lat:37.5154,lng:126.9810,x:748,y:790},
+    {name:"반포대교",lat:37.5147,lng:126.9965,x:805,y:790},
+    {name:"한남대교",lat:37.5187,lng:127.0137,x:854,y:783},
+    {name:"동호대교",lat:37.5250,lng:127.0340,x:980,y:755},
+    {name:"성수대교",lat:37.5350,lng:127.0470,x:1065,y:732},
+    {name:"영동대교",lat:37.5282,lng:127.0500,x:1105,y:727},
+    {name:"청담대교",lat:37.5249,lng:127.0715,x:1207,y:727},
+    {name:"잠실대교",lat:37.5245,lng:127.0910,x:1295,y:685},
+    {name:"천호대교",lat:37.5450,lng:127.1110,x:1260,y:650},
+    {name:"광진교",lat:37.5465,lng:127.1160,x:1268,y:642},
+    {name:"구리암사대교",lat:37.5520,lng:127.1225,x:1370,y:560}
   ];
-  let sx=0,sy=0,sw=0;
-  for(const a of anchors){const d=Math.max(.000001,Math.hypot((lat-a.lat)*1.4,lng-a.lng));const w=1/(d*d*d);sx+=a.x*w;sy+=a.y*w;sw+=w}
-  return {x:sx/sw,y:sy/sw};
+
+  function merc(lat,lng){
+    const R=6378137;
+    const x=R*lng*Math.PI/180;
+    const y=R*Math.log(Math.tan(Math.PI/4+(lat*Math.PI/180)/2));
+    return {x,y};
+  }
+
+  const p=merc(lat,lng);
+  const pts=anchors.map(a=>({a,m:merc(a.lat,a.lng)}));
+
+  // 가까운 기준점 6개를 사용해 국지 affine 변환을 구성합니다.
+  pts.sort((u,v)=>{
+    const du=Math.hypot(p.x-u.m.x,p.y-u.m.y);
+    const dv=Math.hypot(p.x-v.m.x,p.y-v.m.y);
+    return du-dv;
+  });
+
+  const selected=pts.slice(0,6);
+
+  // 가중 최소제곱 affine:
+  // imageX = A*mercX + B*mercY + C
+  // imageY = D*mercX + E*mercY + F
+  function solveAffine(valuesKey){
+    let M=[[0,0,0],[0,0,0],[0,0,0]];
+    let B=[0,0,0];
+
+    selected.forEach(({a,m})=>{
+      const d=Math.max(1,Math.hypot(p.x-m.x,p.y-m.y));
+      const w=1/(d*d);
+      const row=[m.x,m.y,1];
+      const target=a[valuesKey];
+
+      for(let i=0;i<3;i++){
+        for(let j=0;j<3;j++) M[i][j]+=w*row[i]*row[j];
+        B[i]+=w*row[i]*target;
+      }
+    });
+
+    // 3x3 Gaussian elimination
+    for(let i=0;i<3;i++){
+      let max=i;
+      for(let r=i+1;r<3;r++) if(Math.abs(M[r][i])>Math.abs(M[max][i])) max=r;
+      [M[i],M[max]]=[M[max],M[i]];
+      [B[i],B[max]]=[B[max],B[i]];
+
+      const pivot=M[i][i] || 1e-12;
+      for(let c=i;c<3;c++) M[i][c]/=pivot;
+      B[i]/=pivot;
+
+      for(let r=0;r<3;r++){
+        if(r===i) continue;
+        const f=M[r][i];
+        for(let c=i;c<3;c++) M[r][c]-=f*M[i][c];
+        B[r]-=f*B[i];
+      }
+    }
+    return B;
+  }
+
+  const ax=solveAffine("x");
+  const ay=solveAffine("y");
+
+  let x=ax[0]*p.x+ax[1]*p.y+ax[2];
+  let y=ay[0]*p.x+ay[1]*p.y+ay[2];
+
+  // 원본 이미지 영역 밖으로 튀는 것을 방지
+  x=Math.max(0,Math.min(1536,x));
+  y=Math.max(0,Math.min(1024,y));
+  return {x,y};
 }
 function showPopup(id){const z=zones.find(v=>v.id===Number(id));if(!z)return;document.getElementById('popupText').innerHTML=`<b>${z.id}. ${z.name}</b><br>${z.desc}<br><small>※ 미래한강본부 원본 지도 기준 설명입니다.</small>`;document.getElementById('popup').style.display='block'}
 function closePopup(){document.getElementById('popup').style.display='none'}
