@@ -83,8 +83,8 @@ function getCurrentZoneStatus(lat, lon){
     let best = null;
     let bestD = Infinity;
     zones.forEach(z=>{
-      if(typeof z.lat === "number" && typeof z.lon === "number"){
-        const d = Math.hypot((lat-z.lat)*111000, (lon-z.lon)*88800);
+      if(typeof z.lat === "number" && typeof z.lng === "number"){
+        const d = Math.hypot((lat-z.lat)*111000, (lon-z.lng)*88800);
         if(d < bestD){ bestD = d; best = z; }
       }
     });
@@ -116,7 +116,9 @@ function geoToImage(lat,lng){
     {lat:37.5428,lng:126.9040,x:442,y:623},{lat:37.5346,lng:126.9166,x:583,y:672},
     {lat:37.5167,lng:126.9597,x:679,y:774},{lat:37.5187,lng:127.0137,x:854,y:783},
     {lat:37.5282,lng:127.0500,x:1105,y:727},{lat:37.5249,lng:127.0715,x:1207,y:727},
-    {lat:37.5450,lng:127.1110,x:1370,y:560}
+    // 광나루·광진교 권역 GPS 보정점: 기존 표시가 구리암사대교 방향으로 치우쳐 보이는 문제 보정
+    {lat:37.5450,lng:127.1110,x:1260,y:650},
+    {lat:37.5465,lng:127.1160,x:1268,y:642}
   ];
   let sx=0,sy=0,sw=0;
   for(const a of anchors){const d=Math.max(.000001,Math.hypot((lat-a.lat)*1.4,lng-a.lng));const w=1/(d*d*d);sx+=a.x*w;sy+=a.y*w;sw+=w}
