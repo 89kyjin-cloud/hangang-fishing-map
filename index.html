@@ -3,57 +3,155 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>한강 낚시금지구역 검수 지도 v11</title>
+<title>한강 낚시금지구역 정밀 좌표화 도구 v12</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css">
 <style>
-html,body{margin:0;height:100%;font-family:-apple-system,BlinkMacSystemFont,'Noto Sans KR',Arial,sans-serif}
+html,body{margin:0;height:100%;font-family:-apple-system,BlinkMacSystemFont,"Noto Sans KR",Arial,sans-serif}
 #map{height:100vh;width:100vw}
-.top{position:absolute;left:12px;top:12px;z-index:999;background:white;border-radius:14px;padding:12px 14px;box-shadow:0 4px 18px #0003;font-size:13px;max-width:380px}
-.top b{color:#0b6f3a}
-.btn{position:absolute;right:12px;top:12px;z-index:999;background:white;border:0;border-radius:999px;padding:12px 16px;font-weight:900;color:#0b6f3a;box-shadow:0 4px 18px #0003}
-.panel{display:none;position:absolute;right:12px;top:62px;z-index:999;background:white;border-radius:14px;padding:12px;box-shadow:0 4px 18px #0003;max-height:70vh;overflow:auto;width:min(420px,calc(100vw - 24px));font-size:13px}
-.item{border:1px solid #eee;border-radius:10px;padding:8px;margin:6px 0;cursor:pointer}
+.panel{position:absolute;left:12px;top:12px;z-index:999;background:white;border-radius:14px;padding:12px 14px;box-shadow:0 4px 18px #0003;width:min(430px,calc(100vw - 24px));font-size:13px;line-height:1.45}
+.panel b{color:#0b6f3a}
+.btns{position:absolute;right:12px;top:12px;z-index:999;display:flex;flex-direction:column;gap:8px}
+button{border:0;border-radius:999px;background:#fff;color:#0b6f3a;font-weight:900;padding:11px 14px;box-shadow:0 4px 18px #0003}
+.side{position:absolute;right:12px;top:160px;z-index:999;background:white;border-radius:14px;padding:12px;box-shadow:0 4px 18px #0003;max-height:65vh;overflow:auto;width:min(400px,calc(100vw - 24px));font-size:13px;display:none}
+.item{border:1px solid #eee;border-radius:10px;margin:6px 0;padding:8px;cursor:pointer}
 .item b{color:#e90068}
-.num{background:#e90068;color:white;border-radius:999px;width:28px;height:28px;line-height:28px;text-align:center;font-weight:900;border:2px solid white;box-shadow:0 2px 8px #0005}
-.bridge{background:#1677ff;color:white;border-radius:10px;padding:3px 6px;font-size:11px;border:1px solid white;box-shadow:0 2px 8px #0004;white-space:nowrap}
 .legend{position:absolute;left:12px;bottom:12px;z-index:999;background:white;border-radius:12px;padding:10px 12px;box-shadow:0 4px 18px #0003;font-size:13px}
+.zoneLabel{background:#e90068;color:white;border-radius:999px;width:28px;height:28px;line-height:28px;text-align:center;font-weight:900;border:2px solid white;box-shadow:0 2px 8px #0005}
+.ref{position:absolute;left:12px;bottom:70px;z-index:999;background:rgba(255,255,255,.96);border-radius:12px;padding:10px 12px;box-shadow:0 4px 18px #0003;font-size:12px;width:min(430px,calc(100vw - 24px))}
+select,input{width:100%;padding:8px;margin:4px 0;border:1px solid #ddd;border-radius:8px}
 </style>
 </head>
 <body>
 <div id="map"></div>
-<div class="top"><b>검수용 v11</b><br>자동 계산을 버리고 교량·합류부 기준으로 수동 배치한 지도야.<br>빨간선/번호 위치가 맞는지 먼저 확인해줘.</div>
-<button class="btn" onclick="togglePanel()">구역목록</button>
-<div class="panel" id="panel"><b>금지구역 22개</b><div id="list"></div></div>
-<div class="legend">🔴 금지구역 검수선 &nbsp; 🔵 교량 기준점</div>
+
+<div class="panel">
+  <b>정밀 좌표화 도구 v12</b><br>
+  자동 계산이 아니라 실제 지도 위에서 구역을 직접 그려서 저장하는 방식입니다.<br>
+  ① 구역 선택 → ② 지도 위 금지구간을 선으로 그림 → ③ 저장 → ④ GeoJSON 다운로드<br>
+  <b style="color:#e90068">이 방식이 현재 가장 정확합니다.</b>
+  <select id="zoneSelect"></select>
+  <input id="memo" placeholder="비고 예: 북단 호안, 전망데크, 섬 전체 등">
+</div>
+
+<div class="btns">
+  <button onclick="toggleList()">구역목록</button>
+  <button onclick="downloadGeoJSON()">GeoJSON 저장</button>
+  <button onclick="clearAll()">전체삭제</button>
+</div>
+
+<div class="side" id="side"><b>금지구역 22개</b><div id="zoneList"></div></div>
+
+<div class="ref">
+  <b>사용법</b><br>
+  지도 왼쪽의 그리기 버튼 중 <b>polyline</b>을 선택해서 금지구역을 따라 그리세요.<br>
+  섬/샛강처럼 면 전체는 <b>polygon</b>으로 그리세요.<br>
+  저장한 GeoJSON이 최종 GPS 판정 지도에 들어갑니다.
+</div>
+
+<div class="legend">🔴 직접 그린 금지구역 · 🟢 나머지 한강 수면은 허가구역</div>
+
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
 <script>
-const zones = [{"id": 1, "name": "뚝섬 1지역", "desc": "잠실수중보 ~ 청담대교 상류 670m", "coords": [[127.115, 37.5452], [127.104, 37.541], [127.092, 37.5355], [127.08, 37.5295], [127.0655, 37.5245]]}, {"id": 2, "name": "뚝섬 2지역", "desc": "청담대교 북단 교량 ~ 영동대교 북단 하류 710m", "coords": [[127.0715, 37.525], [127.064, 37.526], [127.0565, 37.527], [127.044, 37.5295]]}, {"id": 3, "name": "뚝섬 3지역", "desc": "서울숲 회전고가시설 ~ 중랑천 합류부", "coords": [[127.0438, 37.5386], [127.0395, 37.539], [127.0362, 37.539]]}, {"id": 4, "name": "이촌 1지역", "desc": "중랑천 합류부 ~ 동호대교 북단 교량", "coords": [[127.0362, 37.539], [127.03, 37.5368], [127.025, 37.5348], [127.0202, 37.533]]}, {"id": 5, "name": "이촌 2지역", "desc": "동호대교 북단 하류 800m ~ 한남대교 북단 상류 380m 전망데크", "coords": [[127.0145, 37.529], [127.011, 37.527], [127.008, 37.526]]}, {"id": 6, "name": "이촌 3지역", "desc": "노들섬 전체 + 한강대교 북단 상류 900m ~ 한강대교 북단 교량", "coords": [[126.985, 37.5172], [126.98, 37.5172], [126.975, 37.5172]]}, {"id": 7, "name": "밤섬지역", "desc": "밤섬 전체 + 마포대교 북단 상류 650m ~ 당산철교 북단 상류 500m", "coords": [[126.9515, 37.5265], [126.945, 37.528], [126.9365, 37.5295], [126.929, 37.531], [126.922, 37.533]]}, {"id": 8, "name": "망원 1지역", "desc": "양화대교 북단 교량 ~ 양화대교 북단 하류 550m", "coords": [[126.904, 37.5428], [126.9, 37.546], [126.897, 37.549]]}, {"id": 9, "name": "망원 2지역", "desc": "성산대교 북단 교량 ~ 홍제천 합류부", "coords": [[126.8933, 37.5525], [126.891, 37.554], [126.8895, 37.5565]]}, {"id": 10, "name": "난지 1지역", "desc": "홍제천교 ~ 성산대교 북단 하류 1,300m", "coords": [[126.8895, 37.5565], [126.884, 37.559], [126.879, 37.562]]}, {"id": 11, "name": "난지 2지역", "desc": "가양대교 북단 상류 800m ~ 가양대교 북단 하류 450m", "coords": [[126.861, 37.566], [126.8527, 37.5715], [126.8485, 37.573]]}, {"id": 12, "name": "잠실지역", "desc": "잠실수중보 ~ 잠실수중보 하류 500m", "coords": [[127.115, 37.5452], [127.11, 37.543]]}, {"id": 13, "name": "잠원지역", "desc": "동호대교 남단 하류 300m ~ 한남대교 남단 하류 1,000m", "coords": [[127.012, 37.5215], [127.006, 37.5185], [126.999, 37.5155]]}, {"id": 14, "name": "반포 1지역", "desc": "반포대교 남단 상류 200m ~ 하류 500m", "coords": [[126.998, 37.5122], [126.995, 37.512], [126.989, 37.511]]}, {"id": 15, "name": "반포 2지역", "desc": "동작대교 남단 상류 450m ~ 동작대교 남단 하류 280m", "coords": [[126.984, 37.5112], [126.9785, 37.5107], [126.9755, 37.5105]]}, {"id": 16, "name": "흑석 지역", "desc": "한강대교 남단 상류 760m ~ 한강철교 남단 상류 400m", "coords": [[126.976, 37.5105], [126.968, 37.51], [126.96, 37.509]]}, {"id": 17, "name": "여의도 1지역", "desc": "원효대교 남단 상류 430m ~ 서강대교 남단 교량", "coords": [[126.934, 37.5195], [126.9294, 37.519], [126.925, 37.5225], [126.9215, 37.5264]]}, {"id": 18, "name": "여의도 2지역", "desc": "여의도 샛강 내수면 전역", "coords": [[126.927, 37.5188], [126.92, 37.5195], [126.912, 37.5215], [126.905, 37.523]]}, {"id": 19, "name": "양화 1지역", "desc": "당산철교 남단 상류 370m ~ 당산철교 남단 60m", "coords": [[126.919, 37.529], [126.915, 37.5285]]}, {"id": 20, "name": "양화 2지역", "desc": "선유도공원 전체 + 성산대교 남단 상류 550m ~ 안양천 합류부 상류 150m", "coords": [[126.902, 37.5365], [126.8958, 37.542], [126.889, 37.542]]}, {"id": 21, "name": "양화3, 강서1 지역", "desc": "안양천 합류부 하류 150m ~ 마곡철교 남단 하류 400m", "coords": [[126.883, 37.542], [126.865, 37.548], [126.845, 37.553], [126.829, 37.557]]}, {"id": 22, "name": "강서 2지역", "desc": "방화대교 남단 하류 50m ~ 행주대교 남단 상류 400m", "coords": [[126.84, 37.565], [126.826, 37.573], [126.81, 37.585]]}];
-const bridges = [["잠실수중보", 127.115, 37.5452], ["잠실대교", 127.099, 37.5427], ["청담대교", 127.0715, 37.525], ["영동대교", 127.05, 37.5282], ["동호대교", 127.0202, 37.533], ["한남대교", 127.006, 37.5272], ["한강대교", 126.975, 37.5172], ["마포대교", 126.945, 37.528], ["당산철교", 126.9166, 37.5346], ["양화대교", 126.904, 37.5428], ["성산대교", 126.8933, 37.5525], ["가양대교", 126.8527, 37.5715], ["방화대교", 126.84, 37.565], ["행주대교", 126.81, 37.585]];
+const zones = [
+[1,"뚝섬 1지역","자양2동 잠실수중보 ~ 청담대교 상류 670m"],
+[2,"뚝섬 2지역","청담대교 북단 교량 ~ 영동대교 북단 하류 710m"],
+[3,"뚝섬 3지역","서울숲 회전고가시설 ~ 중랑천 합류부"],
+[4,"이촌 1지역","중랑천 합류부 ~ 동호대교 북단 교량"],
+[5,"이촌 2지역","동호대교 북단 하류 800m ~ 한남대교 북단 상류 380m 전망데크"],
+[6,"이촌 3지역","노들섬 전체 + 한강대교 북단 상류 900m ~ 한강대교 북단 교량"],
+[7,"밤섬지역","밤섬 전체 + 마포대교 북단 상류 650m ~ 당산철교 북단 상류 500m"],
+[8,"망원 1지역","양화대교 북단 교량 ~ 양화대교 북단 하류 550m"],
+[9,"망원 2지역","성산대교 북단 교량 ~ 홍제천 합류부"],
+[10,"난지 1지역","홍제천교 ~ 성산대교 북단 하류 1,300m"],
+[11,"난지 2지역","가양대교 북단 상류 800m ~ 가양대교 북단 하류 450m"],
+[12,"잠실지역","잠실수중보 ~ 잠실수중보 하류 500m"],
+[13,"잠원지역","동호대교 남단 하류 300m ~ 한남대교 남단 하류 1,000m"],
+[14,"반포 1지역","반포대교 남단 상류 200m ~ 하류 500m"],
+[15,"반포 2지역","동작대교 남단 상류 450m ~ 동작대교 남단 하류 280m"],
+[16,"흑석 지역","한강대교 남단 상류 760m ~ 한강철교 남단 상류 400m"],
+[17,"여의도 1지역","원효대교 남단 상류 430m ~ 서강대교 남단 교량"],
+[18,"여의도 2지역","여의도동 샛강 내수면 전역"],
+[19,"양화 1지역","당산철교 남단 상류 370m ~ 당산철교 남단 60m"],
+[20,"양화 2지역","선유도공원 전체 + 성산대교 남단 상류 550m ~ 안양천 합류부 상류 150m"],
+[21,"양화3, 강서1 지역","안양천 합류부 하류 150m ~ 마곡철교 남단 하류 400m"],
+[22,"강서 2지역","방화대교 남단 하류 50m ~ 행주대교 남단 상류 400m"]
+];
+
 const map = L.map('map').setView([37.535,126.975],12);
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'&copy; OpenStreetMap'}).addTo(map);
-const layer = L.featureGroup().addTo(map);
-function latlngs(coords){return coords.map(c=>[c[1],c[0]])}
+const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'&copy; OpenStreetMap'}).addTo(map);
+const satellite = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',{maxZoom:17,attribution:'&copy; OpenTopoMap'});
+L.control.layers({"기본지도":osm,"지형지도":satellite}).addTo(map);
+
+const drawnItems = new L.FeatureGroup();
+map.addLayer(drawnItems);
+
+const drawControl = new L.Control.Draw({
+  edit: { featureGroup: drawnItems },
+  draw: {
+    polygon: { shapeOptions:{color:'#e90068',weight:3,fillOpacity:.35} },
+    polyline: { shapeOptions:{color:'#e90068',weight:6,opacity:.85} },
+    rectangle:false,
+    circle:false,
+    circlemarker:false,
+    marker:false
+  }
+});
+map.addControl(drawControl);
+
+const zoneSelect = document.getElementById('zoneSelect');
+const zoneList = document.getElementById('zoneList');
 zones.forEach(z=>{
-  const line = L.polyline(latlngs(z.coords),{color:'#e90068',weight:8,opacity:.72,lineCap:'round'}).addTo(layer);
-  L.polyline(latlngs(z.coords),{color:'#e90068',weight:2,opacity:1,dashArray:'6 5'}).addTo(layer);
-  const mid = latlngs(z.coords)[Math.floor(z.coords.length/2)];
-  const marker = L.marker(mid,{icon:L.divIcon({className:'',html:`<div class="num">${z.id}</div>`,iconSize:[28,28],iconAnchor:[14,14]})}).addTo(layer);
-  const popup = `<b>${z.id}. ${z.name}</b><br>${z.desc}`;
-  line.bindPopup(popup); marker.bindPopup(popup);
+  const opt=document.createElement('option');
+  opt.value=z[0];
+  opt.textContent=`${z[0]}. ${z[1]}`;
+  zoneSelect.appendChild(opt);
+
+  const div=document.createElement('div');
+  div.className='item';
+  div.innerHTML=`<b>${z[0]}. ${z[1]}</b><br><small>${z[2]}</small>`;
+  div.onclick=()=>{ zoneSelect.value=z[0]; };
+  zoneList.appendChild(div);
 });
-bridges.forEach(b=>{
-  L.marker([b[2],b[1]],{icon:L.divIcon({className:'',html:`<div class="bridge">${b[0]}</div>`,iconSize:[80,22],iconAnchor:[40,11]})}).addTo(map);
+
+map.on(L.Draw.Event.CREATED, function(e) {
+  const layer = e.layer;
+  const zid = parseInt(zoneSelect.value);
+  const z = zones.find(x=>x[0]===zid);
+  const memo = document.getElementById('memo').value || "";
+  layer.feature = layer.feature || {type:"Feature",properties:{}};
+  layer.feature.properties = {
+    id:zid,
+    name:z[1],
+    description:z[2],
+    memo:memo,
+    source:"manual digitizing v12"
+  };
+  layer.bindPopup(`<b>${zid}. ${z[1]}</b><br>${z[2]}<br><small>${memo}</small>`);
+  drawnItems.addLayer(layer);
 });
-function showZone(z){map.fitBounds(L.latLngBounds(latlngs(z.coords)).pad(1.0));}
-function togglePanel(){const p=document.getElementById('panel');p.style.display=p.style.display==='block'?'none':'block';}
-const list=document.getElementById('list');
-zones.forEach(z=>{
-  const d=document.createElement('div');d.className='item';
-  d.innerHTML=`<b>${z.id}. ${z.name}</b><br><small>${z.desc}</small>`;
-  d.onclick=()=>{togglePanel();showZone(z);};
-  list.appendChild(d);
-});
-map.fitBounds(layer.getBounds().pad(.08));
+
+function toggleList(){
+  const s=document.getElementById('side');
+  s.style.display=s.style.display==='block'?'none':'block';
+}
+
+function downloadGeoJSON(){
+  const geo = drawnItems.toGeoJSON();
+  geo.name = "hangang_fishing_forbidden_zones_manual_v12";
+  const blob = new Blob([JSON.stringify(geo,null,2)], {type:"application/json"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "hangang_fishing_forbidden_zones_manual_v12.geojson";
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function clearAll(){
+  if(confirm("직접 그린 모든 구역을 삭제할까요?")) drawnItems.clearLayers();
+}
 </script>
 </body>
 </html>
