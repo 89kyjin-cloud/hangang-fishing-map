@@ -3,99 +3,269 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>한강 낚시금지구역 지도 · 공식고시 기준</title>
+<title>한강 낚시금지구역 GPS 지도</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<meta name="theme-color" content="#0b6f3a">
 <style>
-:root{--green:#007a3d;--green2:#0b6f3a;--pink:#e90068;--blue:#1677ff;--yellow:#ffd36a}
+:root{--green:#0b6f3a;--green2:#11864b;--pink:#e90068;--blue:#1677ff;--bg:#eef1eb}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html,body{margin:0;height:100%;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans KR",Arial,sans-serif;overflow:hidden;background:#eef1eb;color:#111}
-header{height:56px;background:linear-gradient(90deg,#006b35,#088343);color:white;display:flex;align-items:center;justify-content:space-between;padding:0 16px;box-shadow:0 2px 12px #0003;z-index:1000;position:relative}
-header h1{font-size:20px;margin:0;white-space:nowrap} header small{font-size:12px;opacity:.92;text-align:right}
-.badge{font-size:12px;border:1px solid #fff8;border-radius:999px;padding:4px 8px;margin-left:8px}
+html,body{margin:0;height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans KR",Arial,sans-serif;background:var(--bg);color:#111}
+header{height:56px;background:linear-gradient(90deg,var(--green),var(--green2));color:#fff;display:flex;align-items:center;justify-content:space-between;padding:0 14px;box-shadow:0 2px 12px #0003;z-index:1000;position:relative}
+header h1{font-size:18px;margin:0;white-space:nowrap}
+header span{font-size:12px;opacity:.9}
 #map{height:calc(100vh - 56px);width:100vw}
-.card{position:absolute;z-index:900;background:rgba(255,255,255,.96);border:1px solid #ddd;border-radius:14px;box-shadow:0 6px 22px #0002}
-.help{left:14px;top:76px;width:min(300px,calc(100vw - 28px));padding:14px;font-size:13px;line-height:1.55}
-.help b{color:var(--green)} .help .warn{color:#e11;font-weight:800}
-.topPanel{top:76px;left:330px;right:170px;padding:14px 18px;max-height:190px;overflow:auto}
-.topPanel h2{margin:0 0 8px;text-align:center;color:var(--green);font-size:18px}
-.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px 14px;font-size:11px;line-height:1.35}
-.zoneMini b{color:var(--pink)}
-.btns{position:absolute;right:14px;top:76px;z-index:910;display:flex;flex-direction:column;gap:10px}
-.btns button{border:0;border-radius:14px;background:white;color:#111;font-weight:900;box-shadow:0 4px 16px #0003;padding:14px 18px;font-size:16px}
+.btns{position:absolute;right:14px;top:70px;z-index:900;display:flex;flex-direction:column;gap:9px}
+.btns button{border:0;border-radius:999px;background:#fff;color:var(--green);font-weight:900;padding:12px 16px;box-shadow:0 4px 16px #0003;font-size:14px}
 .btns button.loc{color:var(--blue)}
-.status{left:14px;bottom:72px;width:min(350px,calc(100vw - 28px));padding:14px 16px;font-size:14px;line-height:1.55}
-.status h3{margin:0 0 8px;color:var(--green)} .status .judge{font-size:20px;font-weight:900;color:var(--pink)} .status .ok{color:var(--green)}
-.layers{left:370px;bottom:72px;padding:12px 14px;font-size:13px;line-height:2}
-.layers label{display:block;white-space:nowrap} input{accent-color:var(--green)}
-.legend{position:absolute;left:0;right:0;bottom:0;height:48px;background:rgba(255,255,255,.94);z-index:890;display:flex;align-items:center;justify-content:space-between;padding:0 28px;box-shadow:0 -2px 12px #0001;font-size:13px}
-.sw{display:inline-block;width:28px;height:14px;border-radius:2px;margin:0 6px 0 14px;vertical-align:-2px}
-.forbidden{background:rgba(233,0,104,.42);border:1px solid #e90068}
-.allowed{background:rgba(0,122,61,.35);border:1px solid #007a3d}
-.water{background:rgba(255,211,106,.65);border:1px solid #d0a334}
-.panel{display:none;position:absolute;right:14px;top:190px;width:min(430px,calc(100vw - 28px));max-height:56vh;overflow:auto;padding:12px;z-index:950}
-.panel h3{margin:0 0 8px;color:var(--green)} .item{border:1px solid #eee;border-radius:12px;margin:7px 0;padding:9px 10px;cursor:pointer;background:#fff} .item b{color:var(--pink)} .close{float:right;border:1px solid #ddd;background:white;color:var(--green);border-radius:8px;width:30px;height:30px;font-weight:900}
-.shareBtn{margin-top:10px;width:100%;border:0;border-radius:10px;background:linear-gradient(90deg,#007a3d,#11864b);color:white;padding:12px;font-weight:900;font-size:15px}
-.gpsOK{position:absolute;left:50%;bottom:57px;transform:translateX(-50%);z-index:895;background:rgba(255,255,255,.96);border:1px solid #cfe8cf;border-radius:999px;padding:7px 14px;color:var(--green);font-weight:800;font-size:13px}
-.leaflet-popup-content b{color:var(--pink)} .zoneLabel{pointer-events:auto}
-@media(max-width:900px){header h1{font-size:16px} header small{display:none} .topPanel{display:none} .help{font-size:12px;width:250px} .layers{display:none} .legend{font-size:11px;padding:0 8px;justify-content:center} .gpsOK{display:none} .status{bottom:58px}}
+.panel{display:none;position:absolute;right:14px;top:178px;z-index:950;width:min(420px,calc(100vw - 28px));max-height:58vh;overflow:auto;background:white;border:1px solid #ddd;border-radius:16px;box-shadow:0 8px 28px #0003;padding:12px;font-size:13px}
+.panel h3{margin:0 0 8px;color:var(--green)}
+.close{float:right;border:1px solid #ddd;background:white;color:var(--green);border-radius:8px;width:30px;height:30px;font-weight:900}
+.item{border:1px solid #eee;border-radius:12px;margin:7px 0;padding:9px 10px;background:#fff;cursor:pointer}
+.item b{color:var(--pink)}
+.status{position:absolute;left:14px;bottom:72px;z-index:900;width:min(430px,calc(100vw - 28px));background:rgba(255,255,255,.97);border:1px solid #ddd;border-radius:16px;box-shadow:0 6px 24px #0003;padding:13px 15px;font-size:14px;line-height:1.55}
+.status b.green{color:var(--green)} .status b.pink{color:var(--pink)}
+.judgeForbidden{font-size:22px;font-weight:900;color:var(--pink)}
+.judgeAllowed{font-size:22px;font-weight:900;color:var(--green)}
+.status small{color:#555}
+.legend{position:absolute;left:14px;bottom:18px;z-index:900;background:rgba(255,255,255,.95);border:1px solid #ddd;border-radius:14px;box-shadow:0 4px 16px #0002;padding:10px 13px;font-size:13px;line-height:1.45}
+.sw{display:inline-block;width:28px;height:14px;border-radius:2px;margin-right:6px;vertical-align:-2px;background:rgba(233,0,104,.35);border:1px solid var(--pink)}
+.leaflet-popup-content b{color:var(--pink)}
+@media(max-width:760px){header h1{font-size:16px} header span{display:none} .legend{font-size:12px;bottom:12px} .status{bottom:62px;font-size:13px} .btns button{font-size:13px;padding:11px 14px}}
 </style>
 </head>
 <body>
-<header><h1>🚫 한강 낚시금지구역 지도 <span class="badge">공식 고시 기준</span></h1><small>서울특별시 미래한강본부 자료 기반 · GPS 보조 확인</small></header>
+<header><h1>🚫 한강 낚시금지구역 GPS 지도</h1><span>금지구역 + GPS 판정</span></header>
 <div id="map"></div>
-<div class="help card"><b>사용 방법</b><br>지도에서 위치를 확인하세요.<br>GPS 위치는 파란 점으로 표시되고, 현재 위치가 금지구역인지 허가구역인지 자동 표시됩니다.<br><span class="warn">※ 지도는 실시간이며, 금지구역은 좌표화한 구역으로 표시됩니다.</span></div>
-<div class="topPanel card"><h2>유어(낚시 등)행위 금지구역 (24개)</h2><div class="grid" id="miniList"></div></div>
-<div class="btns"><button onclick="togglePanel()">☰ 구역목록</button><button class="loc" onclick="locateMe()">📍 내 위치</button></div>
-<div class="panel card" id="panel"><button class="close" onclick="togglePanel(false)">×</button><h3>구역목록</h3><div id="list"></div></div>
-<div class="status card" id="status"><h3>📍 현재 위치 정보</h3>내 위치 버튼을 눌러 확인하세요.<button class="shareBtn" onclick="shareLocation()">↗ 위치 공유하기</button></div>
-<div class="layers card"><label><input id="chkForbidden" type="checkbox" checked onchange="toggleLayer('forbidden')"> 낚시금지구역</label><label><input id="chkAllowed" type="checkbox" checked onchange="toggleLayer('allowed')"> 낚시허가구역</label><label><input id="chkWater" type="checkbox" checked onchange="toggleLayer('water')"> 수변구역</label><label><input id="chkBase" type="checkbox" checked onchange="toggleBase()"> 교량 / 지명</label></div>
-<div class="gpsOK">✅ 전체 구간 GPS 판정 방식 적용</div>
-<div class="legend"><div>범례 <span class="sw forbidden"></span>낚시금지구역 <span class="sw allowed"></span>낚시허가구역 <span class="sw water"></span>수변구역</div><div>※ 현장 표지·통제선·최신 고시가 우선입니다.</div></div>
+
+<div class="btns">
+  <button class="loc" onclick="locateMe()">📍 내 위치</button>
+  <button onclick="togglePanel()">☰ 구역목록</button>
+</div>
+
+<div class="panel" id="panel">
+  <button class="close" onclick="togglePanel(false)">×</button>
+  <h3>낚시금지구역 24개</h3>
+  <div id="list"></div>
+</div>
+
+<div class="status" id="status">
+  <b class="green">현재 위치</b><br>
+  내 위치 버튼을 눌러 금지구역 여부를 확인하세요.
+</div>
+
+<div class="legend"><span class="sw"></span>낚시금지구역</div>
+
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://unpkg.com/@turf/turf@6.5.0/turf.min.js"></script>
 <script>
-const zones=[{"id": 1, "name": "뚝섬 1지역", "desc": "자양2동 잠실수중보 ~ 청담대교 상류 670m 사이의 한강호안 및 내수면", "coords": [[37.5249, 127.0715], [37.5292, 127.079], [37.5354, 127.0915], [37.545, 127.111]], "buffer": 170}, {"id": 2, "name": "뚝섬 2지역", "desc": "청담대교 북단 상류 450m ~ 성수동 영동대교 북단 하류 710m 사이의 한강호안 및 내수면", "coords": [[37.5282, 127.05], [37.5265, 127.057], [37.5249, 127.0715]], "buffer": 150}, {"id": 3, "name": "뚝섬 3지역", "desc": "서울숲 회전 고가시설 ~ 중랑천 합류부 사이의 한강호안 및 내수면", "coords": [[37.5383, 127.0352], [37.5338, 127.0418], [37.5282, 127.05]], "buffer": 150}, {"id": 4, "name": "이촌 1지역", "desc": "중랑천 합류부 ~ 동호대교 북단 하류 300m 사이의 한강호안 및 내수면", "coords": [[37.533, 127.0202], [37.535, 127.028], [37.5383, 127.0352]], "buffer": 150}, {"id": 5, "name": "이촌 2지역", "desc": "동호대교 북단 하류 800m ~ 한남대교 북단 상류 380m 사이의 한강호안 및 내수면(전망로 포함)", "coords": [[37.5187, 127.0137], [37.522, 127.01], [37.5272, 127.006]], "buffer": 160}, {"id": 6, "name": "이촌 3지역", "desc": "노들섬 전체, 한강대교 북단 상류 900m ~ 한강대교 북단 교량 사이의 한강호안 및 내수면", "coords": [[37.5167, 126.9597], [37.5178, 126.9685], [37.5172, 126.975]], "buffer": 180}, {"id": 7, "name": "밤섬지역", "desc": "밤섬 전체 및 마포대교 북단 상류 650m ~ 당산철교 북단 상류 500m 사이의 한강호안 및 내수면", "coords": [[37.5346, 126.9166], [37.532, 126.925], [37.528, 126.945]], "buffer": 220}, {"id": 8, "name": "망원 1지역", "desc": "양화대교 북단 교량 ~ 합정동 양화대교 북단 하류 550m 사이의 한강호안 및 내수면", "coords": [[37.5346, 126.9166], [37.539, 126.91], [37.5428, 126.904]], "buffer": 150}, {"id": 9, "name": "망원 2지역", "desc": "성산대교 북단 상류 600m 교량 ~ 홍제천 합류부 사이의 한강호안 및 내수면", "coords": [[37.5428, 126.904], [37.548, 126.896], [37.5525, 126.8933]], "buffer": 150}, {"id": 10, "name": "망원 3지역", "desc": "당산철교 북단 상류 500m ~ 당산철교 북단 교량 사이의 한강호안 및 내수면", "coords": [[37.5378, 126.9067], [37.5355, 126.912], [37.5346, 126.9166]], "buffer": 150}, {"id": 11, "name": "난지 1지역", "desc": "홍제천교 ~ 성산대교 북단 하류 1,300m 사이의 한강호안 및 내수면", "coords": [[37.5525, 126.8933], [37.5585, 126.881], [37.5625, 126.879]], "buffer": 170}, {"id": 12, "name": "난지 2지역", "desc": "가양대교 북단 상류 800m ~ 가양대교 북단 하류 450m 사이의 한강호안 및 내수면", "coords": [[37.5715, 126.8527], [37.568, 126.86], [37.564, 126.868]], "buffer": 170}, {"id": 13, "name": "난지 3지역", "desc": "월드컵대교 북단 하류 750m ~ 월드컵대교 북단 하류 900m 사이의 한강호안 및 내수면", "coords": [[37.5585, 126.881], [37.5605, 126.879]], "buffer": 120}, {"id": 14, "name": "잠실지역", "desc": "잠실5동 잠실수중보 ~ 잠실수중보 하류 1,300m 사이의 한강호안 및 내수면", "coords": [[37.545, 127.111], [37.5408, 127.1146], [37.5354, 127.0915]], "buffer": 200}, {"id": 15, "name": "잠원1지역", "desc": "동호대교 남단 하류 300m ~ 한남대교 남단 하류 1,000m 사이의 한강호안 및 내수면", "coords": [[37.5187, 127.0137], [37.5158, 127.0065], [37.512, 126.995]], "buffer": 160}, {"id": 16, "name": "반포 1지역", "desc": "반포동 반포대교 남단 상류 200m ~ 하류 500m 사이의 한강호안 및 내수면", "coords": [[37.5147, 126.9965], [37.512, 126.995], [37.5107, 126.9885]], "buffer": 160}, {"id": 17, "name": "반포 2지역", "desc": "동작대교 남단 상류 450m ~ 동작대교 남단 하류 280m 사이의 한강호안 및 내수면", "coords": [[37.5107, 126.9785], [37.512, 126.985]], "buffer": 140}, {"id": 18, "name": "흑석지역", "desc": "한강대교 남단 상류 1,360m ~ 본동 한강철교 남단 상류 400m 사이의 한강호안 및 내수면", "coords": [[37.5077, 126.956], [37.51, 126.964], [37.5107, 126.9785]], "buffer": 160}, {"id": 19, "name": "여의도 1지역", "desc": "원효대교 남단 상류 430m ~ 서강대교 남단 하류 370m 사이의 한강호안 및 내수면", "coords": [[37.5263, 126.935], [37.522, 126.929], [37.5188, 126.927]], "buffer": 170}, {"id": 20, "name": "여의도 2지역", "desc": "여의도동 샛강 내수면 전역", "coords": [[37.5188, 126.927], [37.52, 126.915], [37.523, 126.905]], "buffer": 220}, {"id": 21, "name": "양화 1지역", "desc": "당산철교 남단 상류 370m ~ 당산철교 남단 60m 사이의 한강호안 및 내수면", "coords": [[37.5327, 126.9062], [37.5305, 126.911], [37.5285, 126.915]], "buffer": 150}, {"id": 22, "name": "양화 2지역", "desc": "선유도공원 전체 및 성산대교 남단 상류 600m ~ 안양천 합류부 상류 150m 사이의 한강호안 및 내수면", "coords": [[37.542, 126.8958], [37.538, 126.9], [37.5327, 126.9062]], "buffer": 190}, {"id": 23, "name": "양화3, 강서 1지역", "desc": "염창동 안양천 합류부 하류 150m ~ 마곡철교 남단 하류 400m 사이의 한강호안 및 내수면", "coords": [[37.555, 126.8515], [37.548, 126.868], [37.542, 126.8958]], "buffer": 170}, {"id": 24, "name": "강서 2지역", "desc": "방화대교 남단 하류 50m ~ 행주대교 남단 상류 400m 사이의 한강호안 및 내수면", "coords": [[37.585, 126.81], [37.575, 126.825], [37.565, 126.84]], "buffer": 170}];
-const map=L.map('map',{zoomControl:false}).setView([37.535,126.975],12);
-const base=L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'&copy; OpenStreetMap'}).addTo(map);
-L.control.zoom({position:'bottomright'}).addTo(map);
-const forbiddenLayer=L.featureGroup().addTo(map), centerLayer=L.featureGroup().addTo(map), allowedLayer=L.featureGroup().addTo(map), waterLayer=L.featureGroup().addTo(map), userLayer=L.featureGroup().addTo(map);
-let forbiddenPolygons=[], allowedPolygons=[], lastPosition=null;
-function lnglat(coords){return coords.map(c=>[c[1],c[0]])}
-function bufferLine(z,meters){return turf.buffer(turf.lineString(lnglat(z.coords)),meters,{units:'meters'})}
-function polyLatLng(poly){return poly.geometry.coordinates[0].map(c=>[c[1],c[0]])}
-function addZones(){
-  zones.forEach(z=>{
-    const fp=bufferLine(z,z.buffer||150); z.poly=fp; forbiddenPolygons.push({zone:z,poly:fp});
-    L.polygon(polyLatLng(fp),{color:'#e90068',weight:2,opacity:.95,fillColor:'#e90068',fillOpacity:.34}).bindPopup(`<b>${z.id}. ${z.name}</b><br>${z.desc}`).addTo(forbiddenLayer);
-    L.polyline(z.coords,{color:'#e90068',weight:3,opacity:.95,dashArray:'6 5'}).addTo(centerLayer);
-    const mid=z.coords[Math.floor(z.coords.length/2)];
-    L.marker(mid,{icon:L.divIcon({className:'zoneLabel',html:`<div style="background:#e90068;color:white;border-radius:999px;width:26px;height:26px;line-height:26px;text-align:center;font-weight:900;border:2px solid white;box-shadow:0 2px 8px #0003">${z.id}</div>`,iconSize:[26,26],iconAnchor:[13,13]})}).addTo(centerLayer).on('click',()=>showZone(z));
+const zones = [{"id": 1, "name": "뚝섬 1지역", "desc": "자양2동 잠실수중보 ~ 청담대교 상류 670m 사이의 한강호안 및 내수면", "buffer_m": 120, "coords": [[127.111, 37.545], [127.1068, 37.5428], [127.1025, 37.5404], [127.0982, 37.538], [127.094, 37.5357], [127.0895, 37.5334], [127.0848, 37.5314], [127.08, 37.5294], [127.076, 37.5275], [127.0715, 37.5249]]}, {"id": 2, "name": "뚝섬 2지역", "desc": "청담대교 북단 상류 450m ~ 성수동 영동대교 북단 하류 710m 사이의 한강호안 및 내수면", "buffer_m": 105, "coords": [[127.0715, 37.5249], [127.0675, 37.5255], [127.0635, 37.5261], [127.059, 37.5267], [127.0543, 37.5274], [127.05, 37.5282]]}, {"id": 3, "name": "뚝섬 3지역", "desc": "서울숲 회전 고가시설 ~ 중랑천 합류부 사이의 한강호안 및 내수면", "buffer_m": 105, "coords": [[127.05, 37.5282], [127.046, 37.5304], [127.042, 37.5328], [127.0385, 37.5358], [127.0352, 37.5383]]}, {"id": 4, "name": "이촌 1지역", "desc": "중랑천 합류부 ~ 동호대교 북단 하류 300m 사이의 한강호안 및 내수면", "buffer_m": 105, "coords": [[127.0352, 37.5383], [127.0315, 37.5368], [127.0275, 37.5354], [127.0236, 37.5342], [127.0202, 37.533]]}, {"id": 5, "name": "이촌 2지역", "desc": "동호대교 북단 하류 800m ~ 한남대교 북단 상류 380m 사이의 한강호안 및 내수면(전망로 포함)", "buffer_m": 110, "coords": [[127.0202, 37.533], [127.0175, 37.531], [127.0147, 37.5287], [127.0117, 37.5256], [127.0092, 37.5224], [127.0137, 37.5187]]}, {"id": 6, "name": "이촌 3지역", "desc": "노들섬 전체, 한강대교 북단 상류 900m ~ 한강대교 북단 교량 사이의 한강호안 및 내수면", "buffer_m": 140, "coords": [[126.975, 37.5172], [126.971, 37.5176], [126.967, 37.5178], [126.963, 37.5174], [126.9597, 37.5167]]}, {"id": 7, "name": "밤섬지역", "desc": "밤섬 전체 및 마포대교 북단 상류 650m ~ 당산철교 북단 상류 500m 사이의 한강호안 및 내수면", "buffer_m": 170, "coords": [[126.945, 37.528], [126.94, 37.5266], [126.9348, 37.5265], [126.9295, 37.5287], [126.924, 37.5312], [126.92, 37.5332], [126.9166, 37.5346]]}, {"id": 8, "name": "망원 1지역", "desc": "양화대교 북단 교량 ~ 합정동 양화대교 북단 하류 550m 사이의 한강호안 및 내수면", "buffer_m": 100, "coords": [[126.9166, 37.5346], [126.9136, 37.5362], [126.9108, 37.5381], [126.9074, 37.5405], [126.904, 37.5428]]}, {"id": 9, "name": "망원 2지역", "desc": "성산대교 북단 상류 600m 교량 ~ 홍제천 합류부 사이의 한강호안 및 내수면", "buffer_m": 110, "coords": [[126.904, 37.5428], [126.9008, 37.5445], [126.8972, 37.5471], [126.8945, 37.55], [126.8933, 37.5525]]}, {"id": 10, "name": "망원 3지역", "desc": "당산철교 북단 상류 500m ~ 당산철교 북단 교량 사이의 한강호안 및 내수면", "buffer_m": 95, "coords": [[126.9166, 37.5346], [126.913, 37.5356], [126.91, 37.5366], [126.9067, 37.5378]]}, {"id": 11, "name": "난지 1지역", "desc": "홍제천교 ~ 성산대교 북단 하류 1,300m 사이의 한강호안 및 내수면", "buffer_m": 125, "coords": [[126.8933, 37.5525], [126.889, 37.5546], [126.885, 37.5568], [126.881, 37.5585], [126.879, 37.5625]]}, {"id": 12, "name": "난지 2지역", "desc": "가양대교 북단 상류 800m ~ 가양대교 북단 하류 450m 사이의 한강호안 및 내수면", "buffer_m": 125, "coords": [[126.868, 37.564], [126.864, 37.5658], [126.86, 37.568], [126.856, 37.57], [126.8527, 37.5715]]}, {"id": 13, "name": "난지 3지역", "desc": "월드컵대교 북단 하류 750m ~ 월드컵대교 북단 하류 900m 사이의 한강호안 및 내수면", "buffer_m": 80, "coords": [[126.881, 37.5585], [126.88, 37.5595], [126.879, 37.5605]]}, {"id": 14, "name": "잠실지역", "desc": "잠실5동 잠실수중보 ~ 잠실수중보 하류 1,300m 사이의 한강호안 및 내수면", "buffer_m": 145, "coords": [[127.111, 37.545], [127.1075, 37.5432], [127.104, 37.5412], [127.1, 37.539], [127.096, 37.5372], [127.0915, 37.5354]]}, {"id": 15, "name": "잠원1지역", "desc": "동호대교 남단 하류 300m ~ 한남대교 남단 하류 1,000m 사이의 한강호안 및 내수면", "buffer_m": 110, "coords": [[127.0137, 37.5187], [127.0095, 37.5172], [127.005, 37.5154], [127.0, 37.5137], [126.995, 37.512]]}, {"id": 16, "name": "반포 1지역", "desc": "반포동 반포대교 남단 상류 200m ~ 하류 500m 사이의 한강호안 및 내수면", "buffer_m": 105, "coords": [[126.9965, 37.5147], [126.9945, 37.5134], [126.992, 37.5123], [126.99, 37.5115], [126.9885, 37.5107]]}, {"id": 17, "name": "반포 2지역", "desc": "동작대교 남단 상류 450m ~ 동작대교 남단 하류 280m 사이의 한강호안 및 내수면", "buffer_m": 95, "coords": [[126.985, 37.512], [126.9827, 37.5115], [126.9805, 37.511], [126.9785, 37.5107]]}, {"id": 18, "name": "흑석지역", "desc": "한강대교 남단 상류 1,360m ~ 본동 한강철교 남단 상류 400m 사이의 한강호안 및 내수면", "buffer_m": 110, "coords": [[126.9785, 37.5107], [126.9735, 37.5105], [126.969, 37.51], [126.964, 37.5095], [126.96, 37.5087], [126.956, 37.5077]]}, {"id": 19, "name": "여의도 1지역", "desc": "원효대교 남단 상류 430m ~ 서강대교 남단 하류 370m 사이의 한강호안 및 내수면", "buffer_m": 115, "coords": [[126.935, 37.5263], [126.932, 37.5245], [126.929, 37.522], [126.9278, 37.5202], [126.927, 37.5188]]}, {"id": 20, "name": "여의도 2지역", "desc": "여의도동 샛강 내수면 전역", "buffer_m": 170, "coords": [[126.927, 37.5188], [126.923, 37.5189], [126.919, 37.5195], [126.915, 37.52], [126.91, 37.5212], [126.905, 37.523]]}, {"id": 21, "name": "양화 1지역", "desc": "당산철교 남단 상류 370m ~ 당산철교 남단 60m 사이의 한강호안 및 내수면", "buffer_m": 95, "coords": [[126.915, 37.5285], [126.9128, 37.5294], [126.91, 37.5307], [126.9062, 37.5327]]}, {"id": 22, "name": "양화 2지역", "desc": "선유도공원 전체 및 성산대교 남단 상류 600m ~ 안양천 합류부 상류 150m 사이의 한강호안 및 내수면", "buffer_m": 140, "coords": [[126.9062, 37.5327], [126.9035, 37.535], [126.9, 37.538], [126.8978, 37.54], [126.8958, 37.542]]}, {"id": 23, "name": "양화3, 강서 1지역", "desc": "염창동 안양천 합류부 하류 150m ~ 마곡철교 남단 하류 400m 사이의 한강호안 및 내수면", "buffer_m": 125, "coords": [[126.8958, 37.542], [126.889, 37.5445], [126.882, 37.5467], [126.875, 37.5476], [126.868, 37.548], [126.86, 37.551], [126.8515, 37.555]]}, {"id": 24, "name": "강서 2지역", "desc": "방화대교 남단 하류 50m ~ 행주대교 남단 상류 400m 사이의 한강호안 및 내수면", "buffer_m": 125, "coords": [[126.84, 37.565], [126.835, 37.5688], [126.83, 37.5725], [126.825, 37.575], [126.817, 37.58], [126.81, 37.585]]}];
+
+const map = L.map('map', { zoomControl:true }).setView([37.535,126.975], 12);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  maxZoom: 19,
+  attribution: '&copy; OpenStreetMap'
+}).addTo(map);
+
+const forbiddenLayer = L.featureGroup().addTo(map);
+const lineLayer = L.featureGroup().addTo(map);
+const userLayer = L.featureGroup().addTo(map);
+let forbiddenPolygons = [];
+let lastPosition = null;
+
+function toLatLngs(coords) {
+  return coords.map(c => [c[1], c[0]]);
+}
+
+function makePoly(z) {
+  return turf.buffer(turf.lineString(z.coords), z.buffer_m || 120, { units:'meters' });
+}
+
+function polyLatLng(poly) {
+  return poly.geometry.coordinates[0].map(c => [c[1], c[0]]);
+}
+
+function addZones() {
+  zones.forEach(z => {
+    const poly = makePoly(z);
+    z.poly = poly;
+    forbiddenPolygons.push({ zone:z, poly });
+
+    L.polygon(polyLatLng(poly), {
+      color:'#e90068',
+      weight:2,
+      opacity:.95,
+      fillColor:'#e90068',
+      fillOpacity:.30
+    }).bindPopup(`<b>${z.id}. ${z.name}</b><br>${z.desc}`).addTo(forbiddenLayer);
+
+    L.polyline(toLatLngs(z.coords), {
+      color:'#e90068',
+      weight:3,
+      opacity:.9,
+      dashArray:'7 5'
+    }).addTo(lineLayer);
+
+    const mid = toLatLngs(z.coords)[Math.floor(z.coords.length/2)];
+    L.marker(mid, {
+      icon:L.divIcon({
+        className:'zoneLabel',
+        html:`<div style="background:#e90068;color:white;border-radius:999px;width:26px;height:26px;line-height:26px;text-align:center;font-weight:900;border:2px solid white;box-shadow:0 2px 8px #0003">${z.id}</div>`,
+        iconSize:[26,26],
+        iconAnchor:[13,13]
+      })
+    }).addTo(lineLayer).on('click', () => showZone(z));
   });
-  // 허가구역/수변구역은 시각 참고용: 실제 금지구역 외 한강 중심 띠
-  const river=[[37.585,126.810],[37.571,126.853],[37.558,126.881],[37.543,126.904],[37.535,126.917],[37.526,126.935],[37.517,126.960],[37.512,126.996],[37.519,127.014],[37.528,127.050],[37.525,127.072],[37.535,127.092],[37.545,127.111],[37.552,127.123]];
-  const water=turf.buffer(turf.lineString(lnglat(river)),450,{units:'meters'});
-  L.polygon(polyLatLng(water),{color:'#d0a334',weight:1,opacity:.8,fillColor:'#ffd36a',fillOpacity:.18,interactive:false}).addTo(waterLayer);
-  const allow=turf.buffer(turf.lineString(lnglat(river)),260,{units:'meters'});
-  L.polygon(polyLatLng(allow),{color:'#007a3d',weight:1,opacity:.65,fillColor:'#007a3d',fillOpacity:.16,interactive:false}).addTo(allowedLayer);
 }
-function nearestZone(lat,lng){let best=null,bestD=Infinity; const pt=turf.point([lng,lat]); zones.forEach(z=>{const line=turf.lineString(lnglat(z.coords)); const snap=turf.nearestPointOnLine(line,pt,{units:'meters'}); const d=snap.properties.dist||turf.distance(pt,snap,{units:'meters'}); if(d<bestD){bestD=d;best=z}}); return {zone:best,dist:bestD}}
-function forbiddenAt(lat,lng){const pt=turf.point([lng,lat]); for(const item of forbiddenPolygons){if(turf.booleanPointInPolygon(pt,item.poly)) return item.zone} return null}
-function renderUser(lat,lng,acc){userLayer.clearLayers(); L.circle([lat,lng],{radius:Math.max(acc||0,8),color:'#1677ff',weight:1,fillColor:'#1677ff',fillOpacity:.13}).addTo(userLayer); L.circleMarker([lat,lng],{radius:10,color:'#fff',weight:3,fillColor:'#1677ff',fillOpacity:1}).addTo(userLayer); map.setView([lat,lng],Math.max(map.getZoom(),16));}
-function locateMe(){
- const st=document.getElementById('status'); if(!navigator.geolocation){st.innerHTML='<h3>📍 현재 위치 정보</h3><b style="color:#e90068">GPS를 지원하지 않습니다.</b>';return}
- st.innerHTML='<h3>📍 현재 위치 정보</h3>GPS 보정 중입니다...';
- const samples=[]; let done=false;
- function finish(){if(done||!samples.length)return; done=true; samples.sort((a,b)=>a.acc-b.acc); const picked=samples.slice(0,Math.min(5,samples.length)); let sw=0,slat=0,slng=0; picked.forEach(s=>{const w=1/Math.max(8,s.acc); sw+=w; slat+=s.lat*w; slng+=s.lng*w}); const lat=slat/sw,lng=slng/sw,acc=picked[0].acc; lastPosition={lat,lng,acc}; renderUser(lat,lng,acc); const fz=forbiddenAt(lat,lng), near=nearestZone(lat,lng); const judge=fz?'금지구역':'허가구역'; const color=fz?'judge':'ok'; st.innerHTML=`<h3>📍 현재 위치 정보</h3><div class="${color}">${judge}</div>가장 가까운 구역: ${near.zone.id}. ${near.zone.name}<br>거리: 약 ${Math.round(near.dist)}m / GPS 정확도: ±${Math.round(acc)}m<br>위도 ${lat.toFixed(6)} &nbsp; 경도 ${lng.toFixed(6)}<br><button class="shareBtn" onclick="shareLocation()">↗ 위치 공유하기</button>`}
- const id=navigator.geolocation.watchPosition(p=>{const s={lat:p.coords.latitude,lng:p.coords.longitude,acc:p.coords.accuracy||9999}; samples.push(s); st.innerHTML=`<h3>📍 현재 위치 정보</h3>GPS 보정 중... 수신 ${samples.length}회 / 현재 정확도 ±${Math.round(s.acc)}m`; if(samples.length>=3&&s.acc<=20){navigator.geolocation.clearWatch(id); finish()}},e=>{if(samples.length)finish(); else st.innerHTML='<h3>📍 현재 위치 정보</h3><b style="color:#e90068">위치 확인 실패</b><br>'+e.message},{enableHighAccuracy:true,timeout:15000,maximumAge:0});
- setTimeout(()=>{try{navigator.geolocation.clearWatch(id)}catch(e){} finish()},3500);
+
+function nearestZone(lat,lng) {
+  let best = null;
+  let bestD = Infinity;
+  const pt = turf.point([lng,lat]);
+  zones.forEach(z => {
+    const line = turf.lineString(z.coords);
+    const snap = turf.nearestPointOnLine(line, pt, { units:'meters' });
+    const d = snap.properties.dist || turf.distance(pt, snap, { units:'meters' });
+    if(d < bestD) {
+      bestD = d;
+      best = z;
+    }
+  });
+  return { zone:best, dist:bestD };
 }
-function shareLocation(){if(!lastPosition){alert('먼저 내 위치를 확인하세요.');return} const text=`한강 낚시금지구역 위치 확인\n위도: ${lastPosition.lat.toFixed(6)}\n경도: ${lastPosition.lng.toFixed(6)}`; if(navigator.share) navigator.share({title:'한강 낚시금지구역 위치',text}); else navigator.clipboard.writeText(text).then(()=>alert('위치 정보가 복사되었습니다.'))}
-function showZone(z){map.fitBounds(L.latLngBounds(z.coords).pad(.8)); L.popup().setLatLng(z.coords[Math.floor(z.coords.length/2)]).setContent(`<b>${z.id}. ${z.name}</b><br>${z.desc}`).openOn(map)}
-function togglePanel(force){const p=document.getElementById('panel'); p.style.display=force===false?'none':(p.style.display==='block'?'none':'block')}
-function toggleLayer(which){const mapLayer={forbidden:forbiddenLayer,allowed:allowedLayer,water:waterLayer}[which]; const chk=document.getElementById('chk'+which[0].toUpperCase()+which.slice(1)); if(chk.checked) map.addLayer(mapLayer); else map.removeLayer(mapLayer)}
-function toggleBase(){const chk=document.getElementById('chkBase'); if(chk.checked) map.addLayer(base); else map.removeLayer(base)}
-function buildLists(){const list=document.getElementById('list'),mini=document.getElementById('miniList'); zones.forEach(z=>{const d=document.createElement('div');d.className='item';d.innerHTML=`<b>${z.id}. ${z.name}</b><br><small>${z.desc}</small>`;d.onclick=()=>{togglePanel(false);showZone(z)};list.appendChild(d); const m=document.createElement('div');m.className='zoneMini';m.innerHTML=`<b>${z.id}</b> ${z.name}<br><small>${z.desc.slice(0,34)}...</small>`;mini.appendChild(m)})}
-addZones(); buildLists(); map.fitBounds(forbiddenLayer.getBounds().pad(.08));
+
+function forbiddenAt(lat,lng) {
+  const pt = turf.point([lng,lat]);
+  for(const item of forbiddenPolygons) {
+    if(turf.booleanPointInPolygon(pt, item.poly)) return item.zone;
+  }
+  return null;
+}
+
+function renderUser(lat,lng,acc) {
+  userLayer.clearLayers();
+
+  L.circle([lat,lng], {
+    radius: Math.max(acc || 0, 10),
+    color:'#1677ff',
+    weight:1,
+    fillColor:'#1677ff',
+    fillOpacity:.13
+  }).addTo(userLayer);
+
+  L.circleMarker([lat,lng], {
+    radius:10,
+    color:'#fff',
+    weight:3,
+    fillColor:'#1677ff',
+    fillOpacity:1
+  }).addTo(userLayer);
+
+  map.setView([lat,lng], Math.max(map.getZoom(), 16));
+}
+
+function locateMe() {
+  const st = document.getElementById('status');
+
+  if(!navigator.geolocation) {
+    st.innerHTML = '<b class="pink">GPS를 지원하지 않습니다.</b>';
+    return;
+  }
+
+  st.innerHTML = '📍 위치 확인 중입니다.<br><small>GPS 신호를 3초 동안 보정합니다.</small>';
+
+  const samples = [];
+  let done = false;
+
+  function finish() {
+    if(done || !samples.length) return;
+    done = true;
+
+    samples.sort((a,b) => a.acc - b.acc);
+    const picked = samples.slice(0, Math.min(5, samples.length));
+
+    let sw = 0, slat = 0, slng = 0;
+    picked.forEach(s => {
+      const w = 1 / Math.max(8, s.acc);
+      sw += w;
+      slat += s.lat * w;
+      slng += s.lng * w;
+    });
+
+    const lat = slat / sw;
+    const lng = slng / sw;
+    const acc = picked[0].acc;
+
+    lastPosition = { lat, lng, acc };
+    renderUser(lat,lng,acc);
+
+    const fz = forbiddenAt(lat,lng);
+    const near = nearestZone(lat,lng);
+    const isForbidden = !!fz;
+
+    st.innerHTML = `📍 <b class="green">현재 위치 표시 완료</b><br>
+      <div class="${isForbidden ? 'judgeForbidden' : 'judgeAllowed'}">${isForbidden ? '금지구역' : '허가구역'}</div>
+      가장 가까운 금지구역: <b>${near.zone.id}. ${near.zone.name}</b><br>
+      거리: 약 ${Math.round(near.dist)}m / GPS 정확도: ±${Math.round(acc)}m<br>
+      좌표: ${lat.toFixed(6)}, ${lng.toFixed(6)}<br>
+      <small>※ 현장 표지·통제선·최신 고시가 우선입니다.</small>`;
+  }
+
+  const watchId = navigator.geolocation.watchPosition(pos => {
+    const s = {
+      lat: pos.coords.latitude,
+      lng: pos.coords.longitude,
+      acc: pos.coords.accuracy || 9999
+    };
+    samples.push(s);
+
+    st.innerHTML = `📍 위치 확인 중...<br><small>수신 ${samples.length}회 / 현재 정확도 ±${Math.round(s.acc)}m</small>`;
+
+    if(samples.length >= 3 && s.acc <= 25) {
+      navigator.geolocation.clearWatch(watchId);
+      finish();
+    }
+  }, err => {
+    if(samples.length) finish();
+    else st.innerHTML = '<b class="pink">위치 확인 실패</b><br>' + err.message;
+  }, {
+    enableHighAccuracy:true,
+    timeout:15000,
+    maximumAge:0
+  });
+
+  setTimeout(() => {
+    try { navigator.geolocation.clearWatch(watchId); } catch(e) {}
+    finish();
+  }, 3500);
+}
+
+function showZone(z) {
+  map.fitBounds(L.latLngBounds(toLatLngs(z.coords)).pad(.8));
+  L.popup()
+    .setLatLng(toLatLngs(z.coords)[Math.floor(z.coords.length/2)])
+    .setContent(`<b>${z.id}. ${z.name}</b><br>${z.desc}`)
+    .openOn(map);
+}
+
+function buildList() {
+  const list = document.getElementById('list');
+  zones.forEach(z => {
+    const d = document.createElement('div');
+    d.className = 'item';
+    d.innerHTML = `<b>${z.id}. ${z.name}</b><br><small>${z.desc}</small>`;
+    d.onclick = () => { togglePanel(false); showZone(z); };
+    list.appendChild(d);
+  });
+}
+
+function togglePanel(force) {
+  const p = document.getElementById('panel');
+  p.style.display = force === false ? 'none' : (p.style.display === 'block' ? 'none' : 'block');
+}
+
+addZones();
+buildList();
+map.fitBounds(forbiddenLayer.getBounds().pad(.08));
 </script>
 </body>
 </html>
