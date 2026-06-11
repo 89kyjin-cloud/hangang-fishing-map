@@ -125,7 +125,7 @@ header h1{font-size:18px;margin:0;white-space:nowrap} header span{font-size:12px
 </style>
 </head>
 <body>
-<header><h1>🚫 한강 낚시금지구역 지도</h1><span>서울특별시 미래한강본부 자료 기반 · GPS는 현재 위치 확인용</span></header>
+<header><h1>🚫 한강 낚시금지구역 지도</h1><span>서울특별시 미래한강본부 자료 기반 · GPS는 보조 확인</span></header>
 <div class="app">
   <main id="viewer">
     <div id="stage">
@@ -252,40 +252,9 @@ function renderList(){const q=document.getElementById('search').value.trim().toL
 
 function hav(a,b,c,d){const R=6371000,toRad=Math.PI/180;let p1=a*toRad,p2=c*toRad,dp=(c-a)*toRad,dl=(d-b)*toRad;let h=Math.sin(dp/2)**2+Math.cos(p1)*Math.cos(p2)*Math.sin(dl/2)**2;return 2*R*Math.asin(Math.sqrt(h))}
 function nearest(lat,lng){return zones.map(z=>({...z,dist:hav(lat,lng,z.lat,z.lng)})).sort((a,b)=>a.dist-b.dist)[0]}
-function showLocation(pos){
-  const lat=pos.coords.latitude,lng=pos.coords.longitude,acc=pos.coords.accuracy||0;
-  coord.innerHTML=`${lat.toFixed(6)}, ${lng.toFixed(6)}<br><b>정확도: ±${Math.round(acc)}m</b>`;
-  gpsStatus.innerHTML=`<b>📍 현재 위치 표시 완료</b><br>위도: ${lat.toFixed(6)}<br>경도: ${lng.toFixed(6)}<br>GPS 정확도: ±${Math.round(acc)}m<br><small>※ GPS는 현재 위치 확인용입니다. 금지구역 여부는 원본 지도와 현장 표지·통제선을 기준으로 확인하세요.</small>`;
-}
-function locateOnce(){
-  if(!navigator.geolocation){
-    gpsStatus.textContent='이 브라우저는 GPS를 지원하지 않습니다.';
-    return;
-  }
-  gpsStatus.textContent='위치 확인 중입니다. 권한 요청이 뜨면 허용을 눌러주세요.';
-  navigator.geolocation.getCurrentPosition(
-    showLocation,
-    e=>{
-      gpsStatus.innerHTML='<b>위치 확인 실패</b><br>'+e.message+'<br>Safari 설정에서 위치 접근을 허용하세요.';
-    },
-    {enableHighAccuracy:true,timeout:12000,maximumAge:0}
-  );
-}
-function toggleWatch(){
-  if(watchId){
-    navigator.geolocation.clearWatch(watchId);
-    watchId=null;
-    gpsStatus.innerHTML+=' <br>실시간 추적을 중지했습니다.';
-    return;
-  }
-  if(!navigator.geolocation)return;
-  gpsStatus.textContent='실시간 위치 추적 중입니다. GPS는 현재 위치 확인용입니다.';
-  watchId=navigator.geolocation.watchPosition(
-    showLocation,
-    e=>{gpsStatus.innerHTML='<b>위치 확인 실패</b><br>'+e.message;},
-    {enableHighAccuracy:true,timeout:12000,maximumAge:0}
-  );
-}
+function showLocation(pos){const lat=pos.coords.latitude,lng=pos.coords.longitude,acc=pos.coords.accuracy||0;coord.innerHTML=`${lat.toFixed(6)}, ${lng.toFixed(6)}<br><b>정확도: ±${Math.round(acc)}m</b>`;const n=nearest(lat,lng);const inside=n.dist<n.r,near=n.dist<n.r+120;const result=inside?'🔴 금지구역 안 또는 매우 가까운 것으로 추정됩니다.':near?'🟠 금지구역 경계 근처로 추정됩니다.':'🟢 금지구역 밖으로 추정됩니다.';gpsStatus.innerHTML=`<b>${result}</b><br>가장 가까운 금지구역: <b>${n.name}</b> · 약 ${Math.round(n.dist)}m<br><small>※ GPS는 보조 판정입니다.</small>`}
+function locateOnce(){if(!navigator.geolocation){gpsStatus.textContent='이 브라우저는 GPS를 지원하지 않습니다.';return}gpsStatus.textContent='위치 확인 중입니다. 권한 요청이 뜨면 허용을 눌러주세요.';navigator.geolocation.getCurrentPosition(showLocation,e=>{gpsStatus.innerHTML='<b>위치 확인 실패</b><br>'+e.message+'<br>Safari 설정에서 위치 접근을 허용하세요.'},{enableHighAccuracy:true,timeout:12000,maximumAge:0})}
+function toggleWatch(){if(watchId){navigator.geolocation.clearWatch(watchId);watchId=null;gpsStatus.innerHTML+=' <br>실시간 추적을 중지했습니다.';return}if(!navigator.geolocation)return;gpsStatus.textContent='실시간 위치 추적 중입니다.';watchId=navigator.geolocation.watchPosition(showLocation,e=>{gpsStatus.innerHTML='<b>위치 확인 실패</b><br>'+e.message},{enableHighAccuracy:true,timeout:12000,maximumAge:0})}
 
 function dist(a,b){return Math.hypot(a.clientX-b.clientX,a.clientY-b.clientY)}
 function mid(a,b){return {clientX:(a.clientX+b.clientX)/2,clientY:(a.clientY+b.clientY)/2}}
