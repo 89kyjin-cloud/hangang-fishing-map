@@ -11,7 +11,11 @@ html,body,#map{height:100%;margin:0}
 body{font-family:-apple-system,BlinkMacSystemFont,"Noto Sans KR",Arial,sans-serif}
 .panel{position:absolute;left:12px;top:12px;z-index:999;background:white;border-radius:14px;padding:12px;box-shadow:0 4px 18px #0003;font-size:13px;width:min(440px,calc(100vw - 24px));line-height:1.45}
 .panel b{color:#0b6f3a}
-.toolbox{position:absolute;right:12px;top:12px;z-index:999;background:white;border-radius:14px;padding:12px;box-shadow:0 4px 18px #0003;width:min(390px,calc(100vw - 24px));font-size:13px;max-height:82vh;overflow:auto}
+.toolbox{display:none;position:absolute;right:12px;top:58px;z-index:999;background:white;border-radius:14px;padding:12px;box-shadow:0 4px 18px #0003;width:min(390px,calc(100vw - 24px));font-size:13px;max-height:72vh;overflow:auto}
+.miniBtn{position:absolute;right:12px;top:12px;z-index:1000;border:0;border-radius:999px;background:white;padding:11px 16px;box-shadow:0 4px 18px #0003;font-weight:900;color:#0b6f3a}
+.toolHead{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.toolHead h3{margin:0;color:#0b6f3a}
+.toolHead button{padding:7px 10px;background:#f3f6f4}
 .toolbox h3{margin:0 0 8px;color:#0b6f3a}
 select,input{width:100%;padding:9px;border:1px solid #ddd;border-radius:10px;margin:5px 0;box-sizing:border-box}
 button{border:0;border-radius:10px;background:#f3f6f4;padding:10px;font-weight:800;color:#0b6f3a}
@@ -25,7 +29,8 @@ button{border:0;border-radius:10px;background:#f3f6f4;padding:10px;font-weight:8
 .modeOn{background:#0b6f3a!important;color:white!important}
 @media(max-width:760px){
  .panel{display:none}
- .toolbox{right:8px;top:8px;width:min(360px,calc(100vw - 16px));font-size:12px}
+ .miniBtn{right:10px;top:10px;padding:10px 14px}
+ .toolbox{right:8px;top:56px;width:min(360px,calc(100vw - 16px));font-size:12px;max-height:62vh}
  .legend{font-size:12px}
 }
 </style>
@@ -38,8 +43,9 @@ button{border:0;border-radius:10px;background:#f3f6f4;padding:10px;font-weight:8
   교각 기준 첫 지점부터 <b>100m 단위 거리</b>와 총 길이를 표시합니다.
 </div>
 
-<div class="toolbox">
-  <h3>구역 간편 조정</h3>
+<button class="miniBtn" id="openTool" onclick="openToolbox()">조정</button>
+<div class="toolbox" id="toolbox">
+  <div class="toolHead"><h3>구역 간편 조정</h3><button onclick="closeToolbox()">닫기</button></div>
   <select id="zoneSelect" onchange="focusSelected()"></select>
   <div class="small" id="info">구역을 선택하세요.</div>
 
@@ -84,7 +90,7 @@ button{border:0;border-radius:10px;background:#f3f6f4;padding:10px;font-weight:8
   </div>
 </div>
 
-<div class="legend">🔴 금지구역 · 🔵 시작점 · 검정표시=첫 지점 기준 거리</div>
+<div class="legend">🔴 금지구역 · 🔵 시작점 · 거리표시</div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
@@ -245,6 +251,8 @@ function downloadGeoJSON(){
  a.href=url; a.download='hangang_fishing_v17_adjusted.geojson'; a.click(); URL.revokeObjectURL(url);
 }
 function downloadHTML(){ alert('현재는 GeoJSON 저장 후 최종 HTML에 반영하는 방식입니다.'); }
+function openToolbox(){ document.getElementById('toolbox').style.display='block'; document.getElementById('openTool').style.display='none'; setTimeout(()=>map.invalidateSize(),100); }
+function closeToolbox(){ document.getElementById('toolbox').style.display='none'; document.getElementById('openTool').style.display='block'; setTimeout(()=>map.invalidateSize(),100); }
 function toggleEdit(){
  alert('정점 직접 편집은 v16 파일을 사용하세요. v17은 꼭짓점 개수/거리/이동/회전/확대축소 간편조정용입니다.');
 }
