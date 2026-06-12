@@ -3,238 +3,172 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>한강 낚시금지구역 v15 구역별 보정판</title>
+<title>한강 낚시금지구역 v16 직접편집판</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css">
 <style>
 html,body,#map{height:100%;margin:0}
 body{font-family:-apple-system,BlinkMacSystemFont,"Noto Sans KR",Arial,sans-serif}
 .panel{position:absolute;left:12px;top:12px;z-index:999;background:white;border-radius:14px;padding:12px;box-shadow:0 4px 18px #0003;font-size:13px;width:min(430px,calc(100vw - 24px));line-height:1.45}
 .panel b{color:#0b6f3a}
-.legend{position:absolute;left:12px;bottom:12px;z-index:999;background:white;border-radius:12px;padding:10px;box-shadow:0 4px 18px #0003;font-size:13px}
-.num{background:#e90068;color:#fff;border-radius:999px;width:28px;height:28px;line-height:28px;text-align:center;font-weight:900;border:2px solid white;box-shadow:0 2px 8px #0005}
-.topbtn{position:absolute;right:12px;top:12px;z-index:999;background:white;border:0;border-radius:999px;padding:11px 15px;box-shadow:0 4px 18px #0003;font-weight:900;color:#0b6f3a}
-.box{position:absolute;right:12px;top:62px;z-index:999;background:white;border-radius:14px;padding:12px;box-shadow:0 4px 18px #0003;width:min(380px,calc(100vw - 24px));font-size:13px;display:none;max-height:74vh;overflow:auto}
-.box h3{margin:0 0 8px;color:#0b6f3a}
-select{width:100%;padding:10px;border:1px solid #ddd;border-radius:10px;margin:6px 0}
-.grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin:8px 0}
-.grid button,.box button{border:0;border-radius:10px;background:#f3f6f4;padding:10px;font-weight:800;color:#0b6f3a}
-.small{font-size:12px;color:#555;line-height:1.45}
+.btns{position:absolute;right:12px;top:12px;z-index:999;display:flex;flex-direction:column;gap:8px}
+.btns button{border:0;border-radius:999px;background:white;padding:11px 15px;box-shadow:0 4px 18px #0003;font-weight:900;color:#0b6f3a}
+.list{display:none;position:absolute;right:12px;top:118px;z-index:999;background:white;border-radius:12px;padding:10px;box-shadow:0 4px 18px #0003;max-height:68vh;overflow:auto;width:min(430px,calc(100vw - 24px));font-size:13px}
 .item{border:1px solid #eee;border-radius:10px;margin:5px 0;padding:8px;cursor:pointer}
 .item b{color:#e90068}
-input[type=range]{width:100%}
+.legend{position:absolute;left:12px;bottom:12px;z-index:999;background:white;border-radius:12px;padding:10px;box-shadow:0 4px 18px #0003;font-size:13px}
+.num{background:#e90068;color:#fff;border-radius:999px;width:28px;height:28px;line-height:28px;text-align:center;font-weight:900;border:2px solid white;box-shadow:0 2px 8px #0005}
+.help{font-size:12px;color:#555}
 @media(max-width:760px){
-  .panel{font-size:12px;top:10px;left:10px;width:min(350px,calc(100vw - 20px))}
-  .legend{font-size:12px}
+ .panel{font-size:12px;width:min(360px,calc(100vw - 24px))}
 }
 </style>
 </head>
 <body>
 <div id="map"></div>
-
 <div class="panel">
-  <b>v15 / 구역별 보정판</b><br>
-  전체 이동이 아니라 <b>구역별로 따로</b> 위치를 조정할 수 있게 바꿨어.<br>
-  지금처럼 6·16·17·18번처럼 구간별로 안 맞는 문제는 이 방식으로 맞춰야 해.
+  <b>v16 직접 편집판</b><br>
+  지금 문제는 단순 이동이 아니라 <b>선 모양/섬 폴리곤 자체가 지도와 안 맞는 것</b>이라서, 정점을 직접 맞추는 편집판으로 바꿨어.<br>
+  왼쪽 편집 버튼(연필)을 눌러 선/면의 꼭짓점을 움직인 뒤 저장하면 됩니다.
+  <div class="help">편집 → 꼭짓점 이동 → Save → GeoJSON 저장</div>
 </div>
-
-<button class="topbtn" onclick="toggleBox()">구역 보정</button>
-
-<div class="box" id="box">
-  <h3>구역별 위치 보정</h3>
-  <select id="zoneSelect" onchange="focusZone()"></select>
-  <div class="small">
-    선택 구역 보정값<br>
-    동서: <b id="dx">0</b>m / 남북: <b id="dy">0</b>m<br>
-    선두께: <b id="wval">7</b>
-  </div>
-  <div class="grid">
-    <span></span><button onclick="moveSelected(0,10)">▲ 북 10m</button><span></span>
-    <button onclick="moveSelected(-10,0)">◀ 서 10m</button><button onclick="resetSelected()">선택 초기화</button><button onclick="moveSelected(10,0)">동 10m ▶</button>
-    <span></span><button onclick="moveSelected(0,-10)">▼ 남 10m</button><span></span>
-  </div>
-  <div class="grid">
-    <button onclick="moveSelected(-50,0)">서 50m</button>
-    <button onclick="moveSelected(0,50)">북 50m</button>
-    <button onclick="moveSelected(50,0)">동 50m</button>
-  </div>
-  <div class="grid">
-    <button onclick="moveSelected(0,-50)">남 50m</button>
-    <button onclick="toggleLabels()">번호 표시</button>
-    <button onclick="downloadCalibrated()">GeoJSON 저장</button>
-  </div>
-  <label>선 두께</label>
-  <input type="range" min="2" max="16" value="7" id="widthRange" oninput="setWidth(this.value)">
-  <button onclick="resetAll()">전체 초기화</button>
-  <div class="small">
-    사용법: 구역 선택 → 지도와 비교 → 10m/50m 버튼으로 이동.<br>
-    보정값은 브라우저에 저장돼서 새로고침해도 유지돼.
-  </div>
-  <div id="list"></div>
+<div class="btns">
+  <button onclick="toggleList()">구역목록</button>
+  <button onclick="downloadGeoJSON()">GeoJSON 저장</button>
+  <button onclick="toggleLabels()">번호 표시</button>
 </div>
-
-<div class="legend">🔴 금지구역 24개 · 🟥 섬/샛강 특수면 · 🟢 그 외 수면 허가</div>
+<div class="list" id="list"></div>
+<div class="legend">🔴 금지구역 · 🟥 섬/샛강 특수면 · ✏️ 정점 직접 수정 가능</div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
 <script>
-const originalGeo = {"type": "FeatureCollection", "name": "hangang_fishing_forbidden_zones_v13_coordinateized_24", "features": [{"type": "Feature", "properties": {"id": 1, "name": "뚝섬 1지역", "description": "자양2동 잠실수중보 ~ 청담대교 상류 670m 사이", "side": "north", "start_chain_m": 32184.8, "end_chain_m": 28433.9, "length_m": 3750.9, "method": "v13_manual_ordered_route_coordinateization"}, "geometry": {"type": "LineString", "coordinates": [[127.0784658, 37.5312064], [127.0803228, 37.5318479], [127.0821798, 37.5324894], [127.0840368, 37.5331309], [127.0858938, 37.5337724], [127.0877507, 37.5344139], [127.0896077, 37.5350554], [127.0914647, 37.5356969], [127.0933217, 37.5363384], [127.0951787, 37.5369799], [127.0970357, 37.5376214], [127.0988927, 37.5382629], [127.1005163, 37.5392192], [127.1021256, 37.5401949], [127.1037349, 37.5411705], [127.1053442, 37.5421462], [127.1069535, 37.5431218], [127.1085628, 37.5440974], [127.1101721, 37.5450731], [127.1117814, 37.5460487], [127.1133907, 37.5470244], [127.115, 37.548]]}}, {"type": "Feature", "properties": {"id": 2, "name": "뚝섬 2지역", "description": "청담대교 북단 상류 450m ~ 영동대교 북단 하류 710m 사이", "side": "north", "start_chain_m": 28213.9, "end_chain_m": 25106.5, "length_m": 3107.4, "method": "v13_manual_ordered_route_coordinateization"}, "geometry": {"type": "LineString", "coordinates": [[127.0429397, 37.5358697], [127.0446564, 37.5351233], [127.0463731, 37.5343769], [127.0480898, 37.5336305], [127.0498065, 37.5328841], [127.0516911, 37.5324854], [127.053597, 37.5321308], [127.0555029, 37.5317762], [127.0574088, 37.5314216], [127.0593148, 37.531067], [127.0612207, 37.5307124], [127.0631266, 37.5303578], [127.0650325, 37.5300032], [127.0669385, 37.5296487], [127.0688444, 37.5292941], [127.0707503, 37.5289395], [127.0725889, 37.5291761], [127.0743837, 37.5297962], [127.0761785, 37.5304162]]}}, {"type": "Feature", "properties": {"id": 3, "name": "뚝섬 3지역", "description": "서울숲 회전고가시설 ~ 중랑천 합류부 사이", "side": "north", "start_chain_m": 25008.0, "end_chain_m": 24428.7, "length_m": 579.2, "method": "v13_manual_ordered_route_coordinateization"}, "geometry": {"type": "LineString", "coordinates": [[127.0362, 37.5388], [127.03764, 37.5381739], [127.0390799, 37.5375479], [127.0405199, 37.5369218], [127.0419599, 37.5362957]]}}, {"type": "Feature", "properties": {"id": 4, "name": "이촌 1지역", "description": "중랑천 합류부 ~ 동호대교 북단 하류 300m 사이", "side": "north", "start_chain_m": 24428.7, "end_chain_m": 22332.4, "length_m": 2096.4, "method": "v13_manual_ordered_route_coordinateization"}, "geometry": {"type": "LineString", "coordinates": [[127.0173687, 37.5273046], [127.0190174, 37.5281754], [127.02064, 37.529075], [127.022196, 37.5300475], [127.023752, 37.53102], [127.025308, 37.5319925], [127.026864, 37.532965], [127.02842, 37.5339375], [127.029976, 37.53491], [127.031532, 37.5358825], [127.033088, 37.536855], [127.034644, 37.5378275], [127.0362, 37.5388]]}}, {"type": "Feature", "properties": {"id": 5, "name": "이촌 2지역", "description": "동호대교 북단 하류 800m ~ 한남대교 북단 상류 380m 사이", "side": "north", "start_chain_m": 21832.4, "end_chain_m": 21507.8, "length_m": 324.6, "method": "v13_manual_ordered_route_coordinateization"}, "geometry": {"type": "LineString", "coordinates": [[127.0095864, 37.5231942], [127.0111181, 37.5240032], [127.0126497, 37.5248122]]}}, {"type": "Feature", "properties": {"id": 6, "name": "이촌 3지역", "description": "노들섬 전체 및 한강대교 북단 상류 900m ~ 한강대교 북단 교량", "side": "north", "start_chain_m": 19102.6, "end_chain_m": 18202.6, "length_m": 900.0, "method": "v13_manual_ordered_route_coordinateization"}, "geometry": {"type": "LineString", "coordinates": [[126.975, 37.5158], [126.9766979, 37.5157228], [126.9783957, 37.5156456], [126.9800936, 37.5155685], [126.9817914, 37.5154913], [126.9834893, 37.5154141], [126.9851871, 37.5153369]]}}, {"type": "Feature", "properties": {"id": 7, "name": "밤섬지역", "description": "밤섬 전체 및 마포대교 북단 상류 650m ~ 당산철교 북단 상류 500m 사이", "side": "north", "start_chain_m": 15626.9, "end_chain_m": 12720.8, "length_m": 2906.1, "method": "v13_manual_ordered_route_coordinateization"}, "geometry": {"type": "LineString", "coordinates": [[126.9211852, 37.5336547], [126.9227528, 37.5327503], [126.9243205, 37.5318459], [126.9258881, 37.5309415], [126.9275516, 37.5302081], [126.9294486, 37.5298919], [126.9313457, 37.5295757], [126.9332427, 37.5292595], [126.9351398, 37.5289434], [126.9370368, 37.5286272], [126.9389339, 37.528311], [126.9408309, 37.5279948], [126.942728, 37.5276787], [126.944625, 37.5273625], [126.9459664, 37.5263336], [126.9471709, 37.5251291], [126.9483754, 37.5239246], [126.9495799, 37.5227201]]}}, {"type": "Feature", "properties": {"id": 8, "name": "망원 1지역", "description": "양화대교 북단 교량 ~ 양화대교 북단 하류 550m 사이", "side": "north", "start_chain_m": 10978.5, "end_chain_m": 10428.5, "length_m": 550.0, "method": "v13_manual_ordered_route_coordinateization"}, "geometry": {"type": "LineString", "coordinates": [[126.8998447, 37.5449893], [126.9008836, 37.5440669], [126.9019224, 37.5431446], [126.9029612, 37.5422223], [126.904, 37.5413]]}}, {"type": "Feature", "properties": {"id": 9, "name": "망원 2지역", "description": "성산대교 북단 상류 600m ~ 홍제천 합류부 사이", "side": "north", "start_chain_m": 10162.2, "end_chain_m": 9741.3, "length_m": 420.9, "method": "v13_manual_ordered_route_coordinateization"}, "geometry": {"type": "LineString", "coordinates": [[126.8946529, 37.5495988], [126.895713, 37.5486577], [126.896773, 37.5477165], [126.897833, 37.5467754]]}}, {"type": "Feature", "properties": {"id": 10, "name": "망원 3지역", "description": "당산철교 북단 상류 500m ~ 당산철교 북단 교량 사이", "side": "north", "start_chain_m": 12720.8, "end_chain_m": 12220.8, "length_m": 500.0, "method": "v13_manual_ordered_route_coordinateization"}, "geometry": {"type": "LineString", "coordinates": [[126.9166, 37.5363], [126.9181284, 37.5354182], [126.9196568, 37.5345365], [126.9211852, 37.5336547]]}}, {"type": "Feature", "properties": {"id": 11, "name": "난지 1지역", "description": "홍제천교 ~ 성산대교 북단 하류 1,300m 사이", "side": "north", "start_chain_m": 9741.3, "end_chain_m": 8262.2, "length_m": 1479.1, "method": "v13_manual_ordered_route_coordinateization"}, "geometry": {"type": "LineString", "coordinates": [[126.8808028, 37.5569103], [126.8825622, 37.5564216], [126.8841615, 37.5556798], [126.8857077, 37.5548542], [126.8872539, 37.5540285], [126.8888, 37.5532029], [126.8903462, 37.5523773], [126.8918924, 37.5515516], [126.8934113, 37.5507012], [126.8946529, 37.5495988]]}}, {"type": "Feature", "properties": {"id": 12, "name": "난지 2지역", "description": "가양대교 북단 상류 800m ~ 가양대교 북단 하류 450m 사이", "side": "north", "start_chain_m": 6272.5, "end_chain_m": 5022.5, "length_m": 1250.0, "method": "v13_manual_ordered_route_coordinateization"}, "geometry": {"type": "LineString", "coordinates": [[126.8494775, 37.5651612], [126.8507562, 37.5664067], [126.852035, 37.5676523], [126.8535475, 37.567922], [126.8553131, 37.5671345], [126.8570787, 37.5663471], [126.8588443, 37.5655596], [126.8606099, 37.5647721]]}}, {"type": "Feature", "properties": {"id": 13, "name": "난지 3지역", "description": "월드컵대교 북단 하류 750m ~ 월드컵대교 북단 하류 900m 사이", "side": "north", "start_chain_m": 7717.4, "end_chain_m": 7567.4, "length_m": 150.0, "method": "v13_manual_ordered_route_coordinateization"}, "geometry": {"type": "LineString", "coordinates": [[126.8734133, 37.5590617], [126.8749706, 37.5585304]]}}, {"type": "Feature", "properties": {"id": 14, "name": "잠실지역", "description": "잠실5동 잠실수중보 ~ 잠실수중보 하류 1,300m 사이", "side": "south", "start_chain_m": 32184.8, "end_chain_m": 30884.8, "length_m": 1300.0, "method": "v13_manual_ordered_route_coordinateization"}, "geometry": {"type": "LineString", "coordinates": [[127.103287, 37.535299], [127.1047511, 37.5361866], [127.1062152, 37.5370742], [127.1076793, 37.5379619], [127.1091435, 37.5388495], [127.1106076, 37.5397371], [127.1120717, 37.5406247], [127.1135359, 37.5415124], [127.115, 37.5424]]}}, {"type": "Feature", "properties": {"id": 15, "name": "잠원지역", "description": "동호대교 남단 하류 300m ~ 한남대교 남단 하류 1,000m 사이", "side": "south", "start_chain_m": 22332.4, "end_chain_m": 20127.8, "length_m": 2204.6, "method": "v13_manual_ordered_route_coordinateization"}, "geometry": {"type": "LineString", "coordinates": [[126.996508, 37.5107814], [126.9981177, 37.5116155], [126.9997274, 37.5124496], [127.001337, 37.5132837], [127.0029467, 37.5141179], [127.0045564, 37.514952], [127.0061652, 37.5157872], [127.0077657, 37.5166326], [127.0093662, 37.5174779], [127.0109667, 37.5183232], [127.0125672, 37.5191686], [127.0141677, 37.5200139], [127.0157682, 37.5208592], [127.0173687, 37.5217046]]}}, {"type": "Feature", "properties": {"id": 16, "name": "반포 1지역", "description": "반포대교 남단 상류 200m ~ 하류 500m 사이", "side": "south", "start_chain_m": 20168.9, "end_chain_m": 19468.9, "length_m": 700.0, "method": "v13_manual_ordered_route_coordinateization"}, "geometry": {"type": "LineString", "coordinates": [[126.9893362, 37.5098112], [126.9913185, 37.5098773], [126.9933009, 37.5099434], [126.9952373, 37.510123], [126.9968984, 37.5109837]]}}, {"type": "Feature", "properties": {"id": 17, "name": "반포 2지역", "description": "동작대교 남단 상류 450m ~ 동작대교 남단 하류 280m 사이", "side": "south", "start_chain_m": 19624.4, "end_chain_m": 18894.4, "length_m": 730.0, "method": "v13_manual_ordered_route_coordinateization"}, "geometry": {"type": "LineString", "coordinates": [[126.9828307, 37.5098441], [126.9844832, 37.5097689], [126.9861359, 37.5097045], [126.9877898, 37.5097597], [126.9894436, 37.5098148], [126.9910974, 37.5098699]]}}, {"type": "Feature", "properties": {"id": 18, "name": "흑석지역", "description": "한강대교 남단 상류 1,360m ~ 한강철교 남단 상류 400m 사이", "side": "south", "start_chain_m": 19562.6, "end_chain_m": 17538.3, "length_m": 2024.3, "method": "v13_manual_ordered_route_coordinateization"}, "geometry": {"type": "LineString", "coordinates": [[126.9675102, 37.5095759], [126.9694123, 37.5097344], [126.9713143, 37.5098929], [126.9732163, 37.5100514], [126.9751188, 37.5101946], [126.9770282, 37.5101078], [126.9789376, 37.510021], [126.980847, 37.5099342], [126.9827564, 37.5098474], [126.9846658, 37.5097606], [126.9865756, 37.5097192], [126.9884864, 37.5097829], [126.9903972, 37.5098466]]}}, {"type": "Feature", "properties": {"id": 19, "name": "여의도 1지역", "description": "원효대교 남단 상류 430m ~ 서강대교 남단 하류 370m 사이", "side": "south", "start_chain_m": 16684.2, "end_chain_m": 12984.9, "length_m": 3699.3, "method": "v13_manual_ordered_route_coordinateization"}, "geometry": {"type": "LineString", "coordinates": [[126.923607, 37.5266575], [126.9252224, 37.5257255], [126.9268379, 37.5247935], [126.9287587, 37.5244069], [126.9307135, 37.5240811], [126.9326684, 37.5237553], [126.9346233, 37.5234295], [126.9365782, 37.5231036], [126.9385331, 37.5227778], [126.9404879, 37.522452], [126.9424428, 37.5221262], [126.9443977, 37.5218004], [126.9458588, 37.5208412], [126.9471, 37.5196], [126.9483412, 37.5183588], [126.9495825, 37.5171175], [126.9508237, 37.5158763], [126.9520649, 37.5146351], [126.9533061, 37.5133939], [126.9547908, 37.5123925], [126.9565841, 37.5116951], [126.9583774, 37.5109977]]}}, {"type": "Feature", "properties": {"id": 20, "name": "여의도 2지역", "description": "여의도동 샛강 내수면 전역", "side": "south", "start_chain_m": 16254.2, "end_chain_m": 10978.5, "length_m": 5275.8, "method": "v13_manual_ordered_route_coordinateization"}, "geometry": {"type": "LineString", "coordinates": [[126.904, 37.5357], [126.9057836, 37.5349922], [126.9075672, 37.5342845], [126.9093507, 37.5335767], [126.9111343, 37.5328689], [126.9129179, 37.5321611], [126.9147015, 37.5314534], [126.9164851, 37.5307456], [126.9181088, 37.5298296], [126.9197215, 37.5288992], [126.9213342, 37.5279688], [126.9229469, 37.5270384], [126.9245595, 37.526108], [126.9261722, 37.5251776], [126.9279499, 37.5245417], [126.9299014, 37.5242164], [126.931853, 37.5238912], [126.9338045, 37.5235659], [126.9357561, 37.5232407], [126.9377076, 37.5229154], [126.9396592, 37.5225901], [126.9416107, 37.5222649], [126.9435623, 37.5219396], [126.9453262, 37.5213738], [126.9465653, 37.5201347], [126.9478045, 37.5188955], [126.9490436, 37.5176564], [126.9502827, 37.5164173], [126.9515218, 37.5151782], [126.9527609, 37.5139391], [126.954, 37.5127]]}}, {"type": "Feature", "properties": {"id": 21, "name": "양화 1지역", "description": "당산철교 남단 상류 370m ~ 당산철교 남단 60m 사이", "side": "south", "start_chain_m": 12590.8, "end_chain_m": 12220.8, "length_m": 370.0, "method": "v13_manual_ordered_route_coordinateization"}, "geometry": {"type": "LineString", "coordinates": [[126.9166, 37.5307], [126.917731, 37.5300475], [126.918862, 37.529395], [126.919993, 37.5287425]]}}, {"type": "Feature", "properties": {"id": 22, "name": "양화 2지역", "description": "선유도공원 전체 및 성산대교 남단 상류 600m ~ 안양천 합류부 상류 150m 사이", "side": "south", "start_chain_m": 10162.2, "end_chain_m": 10157.7, "length_m": 4.5, "method": "v13_manual_ordered_route_coordinateization"}, "geometry": {"type": "LineString", "coordinates": [[126.8977988, 37.5412058], [126.897833, 37.5411754]]}}, {"type": "Feature", "properties": {"id": 23, "name": "양화3, 강서 1지역", "description": "안양천 합류부 하류 150m ~ 마곡철교 남단 하류 400m 사이", "side": "south", "start_chain_m": 9857.7, "end_chain_m": 3997.3, "length_m": 5860.4, "method": "v13_manual_ordered_route_coordinateization"}, "geometry": {"type": "LineString", "coordinates": [[126.8427641, 37.5583303], [126.8437567, 37.5569406], [126.8447494, 37.5555508], [126.8459507, 37.5561261], [126.8472225, 37.5573648], [126.8484942, 37.5586035], [126.849766, 37.5598422], [126.8510377, 37.5610809], [126.8523095, 37.5623196], [126.8539167, 37.5621574], [126.8556725, 37.5613742], [126.8574284, 37.5605911], [126.8591843, 37.5598079], [126.8609402, 37.5590248], [126.862696, 37.5582417], [126.8644519, 37.5574585], [126.8662078, 37.5566754], [126.8679637, 37.5558923], [126.8697195, 37.5551091], [126.8714754, 37.554326], [126.8732313, 37.5535429], [126.8750689, 37.5529031], [126.8769701, 37.552375], [126.8788713, 37.5518469], [126.8807726, 37.5513187], [126.8826738, 37.5507906], [126.8843841, 37.5499609], [126.886055, 37.5490687], [126.8877258, 37.5481765], [126.8893966, 37.5472843], [126.8910674, 37.5463922], [126.8927382, 37.5455], [126.8941906, 37.5444093], [126.8955322, 37.5432181]]}}, {"type": "Feature", "properties": {"id": 24, "name": "강서 2지역", "description": "방화대교 남단 하류 50m ~ 행주대교 남단 상류 400m 사이", "side": "south", "start_chain_m": 3452.8, "end_chain_m": 400.0, "length_m": 3052.8, "method": "v13_manual_ordered_route_coordinateization"}, "geometry": {"type": "LineString", "coordinates": [[126.8138389, 37.5802805], [126.8155624, 37.5794188], [126.8172858, 37.5785571], [126.8190093, 37.5776954], [126.8207327, 37.5768336], [126.8224562, 37.5759719], [126.8241796, 37.5751102], [126.8259031, 37.5742485], [126.8276265, 37.5733867], [126.82935, 37.572525], [126.8307883, 37.5714117], [126.8320539, 37.5701461], [126.8333195, 37.5688805], [126.8345851, 37.5676149], [126.8358508, 37.5663492], [126.8371164, 37.5650836], [126.838382, 37.563818], [126.8396476, 37.5625524]]}}, {"type": "Feature", "properties": {"id": 6, "name": "노들섬 전체", "description": "이촌 3지역 특수면", "side": "polygon", "method": "v13_special_area_manual"}, "geometry": {"type": "Polygon", "coordinates": [[[126.9555, 37.5172], [126.9598, 37.5195], [126.9668, 37.5177], [126.9684, 37.5148], [126.962, 37.5135], [126.9562, 37.5145], [126.9555, 37.5172]]]}}, {"type": "Feature", "properties": {"id": 7, "name": "밤섬 전체", "description": "밤섬지역 특수면", "side": "polygon", "method": "v13_special_area_manual"}, "geometry": {"type": "Polygon", "coordinates": [[[126.9195, 37.5318], [126.9235, 37.534], [126.9318, 37.533], [126.9352, 37.5304], [126.93, 37.5284], [126.922, 37.5294], [126.9195, 37.5318]]]}}, {"type": "Feature", "properties": {"id": 22, "name": "선유도공원 전체", "description": "양화 2지역 특수면", "side": "polygon", "method": "v13_special_area_manual"}, "geometry": {"type": "Polygon", "coordinates": [[[126.8968, 37.5425], [126.9005, 37.5451], [126.9048, 37.543], [126.905, 37.5396], [126.9001, 37.5379], [126.8971, 37.5398], [126.8968, 37.5425]]]}}, {"type": "Feature", "properties": {"id": 20, "name": "여의도 샛강 전역", "description": "여의도 2지역 특수면", "side": "polygon", "method": "v13_special_area_manual"}, "geometry": {"type": "Polygon", "coordinates": [[[126.9028, 37.519], [126.911, 37.522], [126.919, 37.5202], [126.9295, 37.5173], [126.9305, 37.5145], [126.918, 37.5165], [126.907, 37.517], [126.9028, 37.519]]]}}]};
-let cal = JSON.parse(localStorage.getItem('hangangPerZoneCalV15') || '{"width":7,"labels":true,"zones":{}}');
+const initialGeo = {"type": "FeatureCollection", "name": "hangang_fishing_forbidden_zones_v13_coordinateized_24", "features": [{"type": "Feature", "properties": {"id": 1, "name": "뚝섬 1지역", "description": "자양2동 잠실수중보 ~ 청담대교 상류 670m 사이", "side": "north", "start_chain_m": 32184.8, "end_chain_m": 28433.9, "length_m": 3750.9, "method": "v13_manual_ordered_route_coordinateization"}, "geometry": {"type": "LineString", "coordinates": [[127.0784658, 37.5312064], [127.0803228, 37.5318479], [127.0821798, 37.5324894], [127.0840368, 37.5331309], [127.0858938, 37.5337724], [127.0877507, 37.5344139], [127.0896077, 37.5350554], [127.0914647, 37.5356969], [127.0933217, 37.5363384], [127.0951787, 37.5369799], [127.0970357, 37.5376214], [127.0988927, 37.5382629], [127.1005163, 37.5392192], [127.1021256, 37.5401949], [127.1037349, 37.5411705], [127.1053442, 37.5421462], [127.1069535, 37.5431218], [127.1085628, 37.5440974], [127.1101721, 37.5450731], [127.1117814, 37.5460487], [127.1133907, 37.5470244], [127.115, 37.548]]}}, {"type": "Feature", "properties": {"id": 2, "name": "뚝섬 2지역", "description": "청담대교 북단 상류 450m ~ 영동대교 북단 하류 710m 사이", "side": "north", "start_chain_m": 28213.9, "end_chain_m": 25106.5, "length_m": 3107.4, "method": "v13_manual_ordered_route_coordinateization"}, "geometry": {"type": "LineString", "coordinates": [[127.0429397, 37.5358697], [127.0446564, 37.5351233], [127.0463731, 37.5343769], [127.0480898, 37.5336305], [127.0498065, 37.5328841], [127.0516911, 37.5324854], [127.053597, 37.5321308], [127.0555029, 37.5317762], [127.0574088, 37.5314216], [127.0593148, 37.531067], [127.0612207, 37.5307124], [127.0631266, 37.5303578], [127.0650325, 37.5300032], [127.0669385, 37.5296487], [127.0688444, 37.5292941], [127.0707503, 37.5289395], [127.0725889, 37.5291761], [127.0743837, 37.5297962], [127.0761785, 37.5304162]]}}, {"type": "Feature", "properties": {"id": 3, "name": "뚝섬 3지역", "description": "서울숲 회전고가시설 ~ 중랑천 합류부 사이", "side": "north", "start_chain_m": 25008.0, "end_chain_m": 24428.7, "length_m": 579.2, "method": "v13_manual_ordered_route_coordinateization"}, "geometry": {"type": "LineString", "coordinates": [[127.0362, 37.5388], [127.03764, 37.5381739], [127.0390799, 37.5375479], [127.0405199, 37.5369218], [127.0419599, 37.5362957]]}}, {"type": "Feature", "properties": {"id": 4, "name": "이촌 1지역", "description": "중랑천 합류부 ~ 동호대교 북단 하류 300m 사이", "side": "north", "start_chain_m": 24428.7, "end_chain_m": 22332.4, "length_m": 2096.4, "method": "v13_manual_ordered_route_coordinateization"}, "geometry": {"type": "LineString", "coordinates": [[127.0173687, 37.5273046], [127.0190174, 37.5281754], [127.02064, 37.529075], [127.022196, 37.5300475], [127.023752, 37.53102], [127.025308, 37.5319925], [127.026864, 37.532965], [127.02842, 37.5339375], [127.029976, 37.53491], [127.031532, 37.5358825], [127.033088, 37.536855], [127.034644, 37.5378275], [127.0362, 37.5388]]}}, {"type": "Feature", "properties": {"id": 5, "name": "이촌 2지역", "description": "동호대교 북단 하류 800m ~ 한남대교 북단 상류 380m 사이", "side": "north", "start_chain_m": 21832.4, "end_chain_m": 21507.8, "length_m": 324.6, "method": "v13_manual_ordered_route_coordinateization"}, "geometry": {"type": "LineString", "coordinates": [[127.0095864, 37.5231942], [127.0111181, 37.5240032], [127.0126497, 37.5248122]]}}, {"type": "Feature", "properties": {"id": 6, "name": "이촌 3지역", "description": "노들섬 전체 및 한강대교 북단 상류 900m ~ 한강대교 북단 교량", "side": "north", "start_chain_m": 19102.6, "end_chain_m": 18202.6, "length_m": 900.0, "method": "v13_manual_ordered_route_coordinateization"}, "geometry": {"type": "LineString", "coordinates": [[126.975, 37.5158], [126.9766979, 37.5157228], [126.9783957, 37.5156456], [126.9800936, 37.5155685], [126.9817914, 37.5154913], [126.9834893, 37.5154141], [126.9851871, 37.5153369]]}}, {"type": "Feature", "properties": {"id": 7, "name": "밤섬지역", "description": "밤섬 전체 및 마포대교 북단 상류 650m ~ 당산철교 북단 상류 500m 사이", "side": "north", "start_chain_m": 15626.9, "end_chain_m": 12720.8, "length_m": 2906.1, "method": "v13_manual_ordered_route_coordinateization"}, "geometry": {"type": "LineString", "coordinates": [[126.9211852, 37.5336547], [126.9227528, 37.5327503], [126.9243205, 37.5318459], [126.9258881, 37.5309415], [126.9275516, 37.5302081], [126.9294486, 37.5298919], [126.9313457, 37.5295757], [126.9332427, 37.5292595], [126.9351398, 37.5289434], [126.9370368, 37.5286272], [126.9389339, 37.528311], [126.9408309, 37.5279948], [126.942728, 37.5276787], [126.944625, 37.5273625], [126.9459664, 37.5263336], [126.9471709, 37.5251291], [126.9483754, 37.5239246], [126.9495799, 37.5227201]]}}, {"type": "Feature", "properties": {"id": 8, "name": "망원 1지역", "description": "양화대교 북단 교량 ~ 양화대교 북단 하류 550m 사이", "side": "north", "start_chain_m": 10978.5, "end_chain_m": 10428.5, "length_m": 550.0, "method": "v13_manual_ordered_route_coordinateization"}, "geometry": {"type": "LineString", "coordinates": [[126.8998447, 37.5449893], [126.9008836, 37.5440669], [126.9019224, 37.5431446], [126.9029612, 37.5422223], [126.904, 37.5413]]}}, {"type": "Feature", "properties": {"id": 9, "name": "망원 2지역", "description": "성산대교 북단 상류 600m ~ 홍제천 합류부 사이", "side": "north", "start_chain_m": 10162.2, "end_chain_m": 9741.3, "length_m": 420.9, "method": "v13_manual_ordered_route_coordinateization"}, "geometry": {"type": "LineString", "coordinates": [[126.8946529, 37.5495988], [126.895713, 37.5486577], [126.896773, 37.5477165], [126.897833, 37.5467754]]}}, {"type": "Feature", "properties": {"id": 10, "name": "망원 3지역", "description": "당산철교 북단 상류 500m ~ 당산철교 북단 교량 사이", "side": "north", "start_chain_m": 12720.8, "end_chain_m": 12220.8, "length_m": 500.0, "method": "v13_manual_ordered_route_coordinateization"}, "geometry": {"type": "LineString", "coordinates": [[126.9166, 37.5363], [126.9181284, 37.5354182], [126.9196568, 37.5345365], [126.9211852, 37.5336547]]}}, {"type": "Feature", "properties": {"id": 11, "name": "난지 1지역", "description": "홍제천교 ~ 성산대교 북단 하류 1,300m 사이", "side": "north", "start_chain_m": 9741.3, "end_chain_m": 8262.2, "length_m": 1479.1, "method": "v13_manual_ordered_route_coordinateization"}, "geometry": {"type": "LineString", "coordinates": [[126.8808028, 37.5569103], [126.8825622, 37.5564216], [126.8841615, 37.5556798], [126.8857077, 37.5548542], [126.8872539, 37.5540285], [126.8888, 37.5532029], [126.8903462, 37.5523773], [126.8918924, 37.5515516], [126.8934113, 37.5507012], [126.8946529, 37.5495988]]}}, {"type": "Feature", "properties": {"id": 12, "name": "난지 2지역", "description": "가양대교 북단 상류 800m ~ 가양대교 북단 하류 450m 사이", "side": "north", "start_chain_m": 6272.5, "end_chain_m": 5022.5, "length_m": 1250.0, "method": "v13_manual_ordered_route_coordinateization"}, "geometry": {"type": "LineString", "coordinates": [[126.8494775, 37.5651612], [126.8507562, 37.5664067], [126.852035, 37.5676523], [126.8535475, 37.567922], [126.8553131, 37.5671345], [126.8570787, 37.5663471], [126.8588443, 37.5655596], [126.8606099, 37.5647721]]}}, {"type": "Feature", "properties": {"id": 13, "name": "난지 3지역", "description": "월드컵대교 북단 하류 750m ~ 월드컵대교 북단 하류 900m 사이", "side": "north", "start_chain_m": 7717.4, "end_chain_m": 7567.4, "length_m": 150.0, "method": "v13_manual_ordered_route_coordinateization"}, "geometry": {"type": "LineString", "coordinates": [[126.8734133, 37.5590617], [126.8749706, 37.5585304]]}}, {"type": "Feature", "properties": {"id": 14, "name": "잠실지역", "description": "잠실5동 잠실수중보 ~ 잠실수중보 하류 1,300m 사이", "side": "south", "start_chain_m": 32184.8, "end_chain_m": 30884.8, "length_m": 1300.0, "method": "v13_manual_ordered_route_coordinateization"}, "geometry": {"type": "LineString", "coordinates": [[127.103287, 37.535299], [127.1047511, 37.5361866], [127.1062152, 37.5370742], [127.1076793, 37.5379619], [127.1091435, 37.5388495], [127.1106076, 37.5397371], [127.1120717, 37.5406247], [127.1135359, 37.5415124], [127.115, 37.5424]]}}, {"type": "Feature", "properties": {"id": 15, "name": "잠원지역", "description": "동호대교 남단 하류 300m ~ 한남대교 남단 하류 1,000m 사이", "side": "south", "start_chain_m": 22332.4, "end_chain_m": 20127.8, "length_m": 2204.6, "method": "v13_manual_ordered_route_coordinateization"}, "geometry": {"type": "LineString", "coordinates": [[126.996508, 37.5107814], [126.9981177, 37.5116155], [126.9997274, 37.5124496], [127.001337, 37.5132837], [127.0029467, 37.5141179], [127.0045564, 37.514952], [127.0061652, 37.5157872], [127.0077657, 37.5166326], [127.0093662, 37.5174779], [127.0109667, 37.5183232], [127.0125672, 37.5191686], [127.0141677, 37.5200139], [127.0157682, 37.5208592], [127.0173687, 37.5217046]]}}, {"type": "Feature", "properties": {"id": 16, "name": "반포 1지역", "description": "반포대교 남단 상류 200m ~ 하류 500m 사이", "side": "south", "start_chain_m": 20168.9, "end_chain_m": 19468.9, "length_m": 700.0, "method": "v13_manual_ordered_route_coordinateization"}, "geometry": {"type": "LineString", "coordinates": [[126.9893362, 37.5098112], [126.9913185, 37.5098773], [126.9933009, 37.5099434], [126.9952373, 37.510123], [126.9968984, 37.5109837]]}}, {"type": "Feature", "properties": {"id": 17, "name": "반포 2지역", "description": "동작대교 남단 상류 450m ~ 동작대교 남단 하류 280m 사이", "side": "south", "start_chain_m": 19624.4, "end_chain_m": 18894.4, "length_m": 730.0, "method": "v13_manual_ordered_route_coordinateization"}, "geometry": {"type": "LineString", "coordinates": [[126.9828307, 37.5098441], [126.9844832, 37.5097689], [126.9861359, 37.5097045], [126.9877898, 37.5097597], [126.9894436, 37.5098148], [126.9910974, 37.5098699]]}}, {"type": "Feature", "properties": {"id": 18, "name": "흑석지역", "description": "한강대교 남단 상류 1,360m ~ 한강철교 남단 상류 400m 사이", "side": "south", "start_chain_m": 19562.6, "end_chain_m": 17538.3, "length_m": 2024.3, "method": "v13_manual_ordered_route_coordinateization"}, "geometry": {"type": "LineString", "coordinates": [[126.9675102, 37.5095759], [126.9694123, 37.5097344], [126.9713143, 37.5098929], [126.9732163, 37.5100514], [126.9751188, 37.5101946], [126.9770282, 37.5101078], [126.9789376, 37.510021], [126.980847, 37.5099342], [126.9827564, 37.5098474], [126.9846658, 37.5097606], [126.9865756, 37.5097192], [126.9884864, 37.5097829], [126.9903972, 37.5098466]]}}, {"type": "Feature", "properties": {"id": 19, "name": "여의도 1지역", "description": "원효대교 남단 상류 430m ~ 서강대교 남단 하류 370m 사이", "side": "south", "start_chain_m": 16684.2, "end_chain_m": 12984.9, "length_m": 3699.3, "method": "v13_manual_ordered_route_coordinateization"}, "geometry": {"type": "LineString", "coordinates": [[126.923607, 37.5266575], [126.9252224, 37.5257255], [126.9268379, 37.5247935], [126.9287587, 37.5244069], [126.9307135, 37.5240811], [126.9326684, 37.5237553], [126.9346233, 37.5234295], [126.9365782, 37.5231036], [126.9385331, 37.5227778], [126.9404879, 37.522452], [126.9424428, 37.5221262], [126.9443977, 37.5218004], [126.9458588, 37.5208412], [126.9471, 37.5196], [126.9483412, 37.5183588], [126.9495825, 37.5171175], [126.9508237, 37.5158763], [126.9520649, 37.5146351], [126.9533061, 37.5133939], [126.9547908, 37.5123925], [126.9565841, 37.5116951], [126.9583774, 37.5109977]]}}, {"type": "Feature", "properties": {"id": 20, "name": "여의도 2지역", "description": "여의도동 샛강 내수면 전역", "side": "south", "start_chain_m": 16254.2, "end_chain_m": 10978.5, "length_m": 5275.8, "method": "v13_manual_ordered_route_coordinateization"}, "geometry": {"type": "LineString", "coordinates": [[126.904, 37.5357], [126.9057836, 37.5349922], [126.9075672, 37.5342845], [126.9093507, 37.5335767], [126.9111343, 37.5328689], [126.9129179, 37.5321611], [126.9147015, 37.5314534], [126.9164851, 37.5307456], [126.9181088, 37.5298296], [126.9197215, 37.5288992], [126.9213342, 37.5279688], [126.9229469, 37.5270384], [126.9245595, 37.526108], [126.9261722, 37.5251776], [126.9279499, 37.5245417], [126.9299014, 37.5242164], [126.931853, 37.5238912], [126.9338045, 37.5235659], [126.9357561, 37.5232407], [126.9377076, 37.5229154], [126.9396592, 37.5225901], [126.9416107, 37.5222649], [126.9435623, 37.5219396], [126.9453262, 37.5213738], [126.9465653, 37.5201347], [126.9478045, 37.5188955], [126.9490436, 37.5176564], [126.9502827, 37.5164173], [126.9515218, 37.5151782], [126.9527609, 37.5139391], [126.954, 37.5127]]}}, {"type": "Feature", "properties": {"id": 21, "name": "양화 1지역", "description": "당산철교 남단 상류 370m ~ 당산철교 남단 60m 사이", "side": "south", "start_chain_m": 12590.8, "end_chain_m": 12220.8, "length_m": 370.0, "method": "v13_manual_ordered_route_coordinateization"}, "geometry": {"type": "LineString", "coordinates": [[126.9166, 37.5307], [126.917731, 37.5300475], [126.918862, 37.529395], [126.919993, 37.5287425]]}}, {"type": "Feature", "properties": {"id": 22, "name": "양화 2지역", "description": "선유도공원 전체 및 성산대교 남단 상류 600m ~ 안양천 합류부 상류 150m 사이", "side": "south", "start_chain_m": 10162.2, "end_chain_m": 10157.7, "length_m": 4.5, "method": "v13_manual_ordered_route_coordinateization"}, "geometry": {"type": "LineString", "coordinates": [[126.8977988, 37.5412058], [126.897833, 37.5411754]]}}, {"type": "Feature", "properties": {"id": 23, "name": "양화3, 강서 1지역", "description": "안양천 합류부 하류 150m ~ 마곡철교 남단 하류 400m 사이", "side": "south", "start_chain_m": 9857.7, "end_chain_m": 3997.3, "length_m": 5860.4, "method": "v13_manual_ordered_route_coordinateization"}, "geometry": {"type": "LineString", "coordinates": [[126.8427641, 37.5583303], [126.8437567, 37.5569406], [126.8447494, 37.5555508], [126.8459507, 37.5561261], [126.8472225, 37.5573648], [126.8484942, 37.5586035], [126.849766, 37.5598422], [126.8510377, 37.5610809], [126.8523095, 37.5623196], [126.8539167, 37.5621574], [126.8556725, 37.5613742], [126.8574284, 37.5605911], [126.8591843, 37.5598079], [126.8609402, 37.5590248], [126.862696, 37.5582417], [126.8644519, 37.5574585], [126.8662078, 37.5566754], [126.8679637, 37.5558923], [126.8697195, 37.5551091], [126.8714754, 37.554326], [126.8732313, 37.5535429], [126.8750689, 37.5529031], [126.8769701, 37.552375], [126.8788713, 37.5518469], [126.8807726, 37.5513187], [126.8826738, 37.5507906], [126.8843841, 37.5499609], [126.886055, 37.5490687], [126.8877258, 37.5481765], [126.8893966, 37.5472843], [126.8910674, 37.5463922], [126.8927382, 37.5455], [126.8941906, 37.5444093], [126.8955322, 37.5432181]]}}, {"type": "Feature", "properties": {"id": 24, "name": "강서 2지역", "description": "방화대교 남단 하류 50m ~ 행주대교 남단 상류 400m 사이", "side": "south", "start_chain_m": 3452.8, "end_chain_m": 400.0, "length_m": 3052.8, "method": "v13_manual_ordered_route_coordinateization"}, "geometry": {"type": "LineString", "coordinates": [[126.8138389, 37.5802805], [126.8155624, 37.5794188], [126.8172858, 37.5785571], [126.8190093, 37.5776954], [126.8207327, 37.5768336], [126.8224562, 37.5759719], [126.8241796, 37.5751102], [126.8259031, 37.5742485], [126.8276265, 37.5733867], [126.82935, 37.572525], [126.8307883, 37.5714117], [126.8320539, 37.5701461], [126.8333195, 37.5688805], [126.8345851, 37.5676149], [126.8358508, 37.5663492], [126.8371164, 37.5650836], [126.838382, 37.563818], [126.8396476, 37.5625524]]}}, {"type": "Feature", "properties": {"id": 6, "name": "노들섬 전체", "description": "이촌 3지역 특수면", "side": "polygon", "method": "v13_special_area_manual"}, "geometry": {"type": "Polygon", "coordinates": [[[126.9555, 37.5172], [126.9598, 37.5195], [126.9668, 37.5177], [126.9684, 37.5148], [126.962, 37.5135], [126.9562, 37.5145], [126.9555, 37.5172]]]}}, {"type": "Feature", "properties": {"id": 7, "name": "밤섬 전체", "description": "밤섬지역 특수면", "side": "polygon", "method": "v13_special_area_manual"}, "geometry": {"type": "Polygon", "coordinates": [[[126.9195, 37.5318], [126.9235, 37.534], [126.9318, 37.533], [126.9352, 37.5304], [126.93, 37.5284], [126.922, 37.5294], [126.9195, 37.5318]]]}}, {"type": "Feature", "properties": {"id": 22, "name": "선유도공원 전체", "description": "양화 2지역 특수면", "side": "polygon", "method": "v13_special_area_manual"}, "geometry": {"type": "Polygon", "coordinates": [[[126.8968, 37.5425], [126.9005, 37.5451], [126.9048, 37.543], [126.905, 37.5396], [126.9001, 37.5379], [126.8971, 37.5398], [126.8968, 37.5425]]]}}, {"type": "Feature", "properties": {"id": 20, "name": "여의도 샛강 전역", "description": "여의도 2지역 특수면", "side": "polygon", "method": "v13_special_area_manual"}, "geometry": {"type": "Polygon", "coordinates": [[[126.9028, 37.519], [126.911, 37.522], [126.919, 37.5202], [126.9295, 37.5173], [126.9305, 37.5145], [126.918, 37.5165], [126.907, 37.517], [126.9028, 37.519]]]}}]};
+let labelsVisible = true;
 
 const map=L.map('map').setView([37.535,126.975],12);
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'&copy; OpenStreetMap'}).addTo(map);
 
-let layer=L.featureGroup().addTo(map);
-let labelLayer=L.featureGroup().addTo(map);
-let featureLayers = {};
-
-const select = document.getElementById('zoneSelect');
-const unique = [];
-const seen = new Set();
-originalGeo.features.forEach(f=>{
-  const id = String(f.properties.id);
-  if(!seen.has(id)){
-    seen.add(id);
-    unique.push({id:id, name:f.properties.name});
-  }
-});
-unique.sort((a,b)=>Number(a.id)-Number(b.id)).forEach(z=>{
-  const opt = document.createElement('option');
-  opt.value = z.id;
-  opt.textContent = z.id + '. ' + z.name;
-  select.appendChild(opt);
-});
-
-function getZoneCal(id){
-  if(!cal.zones[id]) cal.zones[id]={dx:0,dy:0};
-  return cal.zones[id];
-}
-
-function metersToLngLat(dx, dy, lat){
-  const dLat = dy / 111320;
-  const dLng = dx / (111320 * Math.cos(lat * Math.PI / 180));
-  return [dLng, dLat];
-}
-
-function transformCoord(c, zcal){
-  const delta = metersToLngLat(zcal.dx || 0, zcal.dy || 0, c[1]);
-  return [c[0] + delta[0], c[1] + delta[1]];
-}
-
-function transformGeometry(g, zcal){
-  if(g.type === 'LineString') return {type:'LineString', coordinates:g.coordinates.map(c=>transformCoord(c,zcal))};
-  if(g.type === 'Polygon') return {type:'Polygon', coordinates:g.coordinates.map(r=>r.map(c=>transformCoord(c,zcal)))};
-  return g;
-}
-
-function calibratedGeo(){
-  return {
-    type:'FeatureCollection',
-    name:'hangang_fishing_forbidden_zones_v15_per_zone_calibrated',
-    features: originalGeo.features.map(f=>{
-      const id = String(f.properties.id);
-      const zcal = getZoneCal(id);
-      return {
-        type:'Feature',
-        properties: Object.assign({}, f.properties, {cal_dx_m:zcal.dx||0, cal_dy_m:zcal.dy||0}),
-        geometry: transformGeometry(f.geometry, zcal)
-      };
-    })
-  };
-}
+const editable = new L.FeatureGroup();
+map.addLayer(editable);
+const labelLayer = new L.FeatureGroup();
+map.addLayer(labelLayer);
 
 function style(f){
   return f.geometry.type==='Polygon'
     ? {color:'#e90068',weight:2,fillColor:'#e90068',fillOpacity:.42}
-    : {color:'#e90068',weight:Number(cal.width),opacity:.75,lineCap:'round',lineJoin:'round'};
+    : {color:'#e90068',weight:7,opacity:.75,lineCap:'round',lineJoin:'round'};
 }
 
-function render(){
-  layer.clearLayers();
-  labelLayer.clearLayers();
-  featureLayers = {};
-  const geo = calibratedGeo();
-  L.geoJSON(geo,{
+function popup(f){
+  return `<b>${f.properties.id}. ${f.properties.name}</b><br>${f.properties.description}<br><small>${f.properties.side || ''}</small>`;
+}
+
+function addGeo(){
+  L.geoJSON(initialGeo,{
     style: style,
     onEachFeature:(f,l)=>{
-      const id = String(f.properties.id);
-      l.bindPopup(`<b>${f.properties.id}. ${f.properties.name}</b><br>${f.properties.description}<br><small>${f.properties.side || ''}</small>`);
-      l.addTo(layer);
-      if(!featureLayers[id]) featureLayers[id]=L.featureGroup();
-      l.addTo(featureLayers[id]);
+      l.feature = f;
+      l.bindPopup(popup(f));
+      editable.addLayer(l);
     }
   });
-  if(cal.labels){
-    geo.features.forEach(f=>{
-      let coords=f.geometry.type==='Polygon'?f.geometry.coordinates[0]:f.geometry.coordinates;
-      let mid=coords[Math.floor(coords.length/2)];
-      L.marker([mid[1],mid[0]],{icon:L.divIcon({className:'',html:`<div class="num">${f.properties.id}</div>`,iconSize:[28,28],iconAnchor:[14,14]})})
-        .addTo(labelLayer)
-        .bindPopup(`<b>${f.properties.id}. ${f.properties.name}</b><br>${f.properties.description}`);
+}
+
+function currentGeo(){
+  const geo = editable.toGeoJSON();
+  geo.name = 'hangang_fishing_forbidden_zones_v16_edited';
+  geo.features.forEach(f=>{
+    if(!f.properties) f.properties = {};
+    f.properties.method = 'v16_direct_vertex_edit';
+  });
+  return geo;
+}
+
+function drawLabels(){
+  labelLayer.clearLayers();
+  if(!labelsVisible) return;
+  currentGeo().features.forEach(f=>{
+    let coords = f.geometry.type === 'Polygon' ? f.geometry.coordinates[0] : f.geometry.coordinates;
+    if(!coords || !coords.length) return;
+    let mid = coords[Math.floor(coords.length/2)];
+    L.marker([mid[1],mid[0]],{
+      icon:L.divIcon({className:'',html:`<div class="num">${f.properties.id || ''}</div>`,iconSize:[28,28],iconAnchor:[14,14]})
+    }).addTo(labelLayer).bindPopup(`<b>${f.properties.id}. ${f.properties.name}</b>`);
+  });
+}
+
+function rebuildList(){
+  const list = document.getElementById('list');
+  list.innerHTML = '';
+  currentGeo().features
+    .filter(f=>f.geometry.type==='LineString')
+    .sort((a,b)=>(a.properties.id||0)-(b.properties.id||0))
+    .forEach(f=>{
+      const d=document.createElement('div');
+      d.className='item';
+      d.innerHTML=`<b>${f.properties.id}. ${f.properties.name}</b><br><small>${f.properties.description}</small>`;
+      d.onclick=()=>{
+        const fg=L.geoJSON(f);
+        try{map.fitBounds(fg.getBounds().pad(1));}catch(e){}
+        toggleList(false);
+      };
+      list.appendChild(d);
     });
-  }
-  updateInfo();
-  localStorage.setItem('hangangPerZoneCalV15', JSON.stringify(cal));
 }
 
-function updateInfo(){
-  const id = String(select.value || '1');
-  const zcal = getZoneCal(id);
-  document.getElementById('dx').textContent = Math.round(zcal.dx || 0);
-  document.getElementById('dy').textContent = Math.round(zcal.dy || 0);
-  document.getElementById('wval').textContent = cal.width;
-  document.getElementById('widthRange').value = cal.width;
+const drawControl = new L.Control.Draw({
+  edit: { featureGroup: editable },
+  draw: {
+    polygon: { shapeOptions: {color:'#e90068',weight:2,fillOpacity:.42} },
+    polyline: { shapeOptions: {color:'#e90068',weight:7,opacity:.75} },
+    rectangle:false, circle:false, circlemarker:false, marker:false
+  }
+});
+map.addControl(drawControl);
+
+map.on(L.Draw.Event.CREATED, function(e) {
+  const layer=e.layer;
+  layer.feature = layer.feature || {type:'Feature',properties:{}};
+  layer.feature.properties = {
+    id: 0,
+    name: '새 금지구역',
+    description: '직접 추가',
+    side: 'manual'
+  };
+  layer.bindPopup('새 금지구역');
+  editable.addLayer(layer);
+  drawLabels();
+  rebuildList();
+});
+
+map.on(L.Draw.Event.EDITED, function() { drawLabels(); rebuildList(); });
+map.on(L.Draw.Event.DELETED, function() { drawLabels(); rebuildList(); });
+
+function toggleList(force){
+  const e=document.getElementById('list');
+  e.style.display = force===false ? 'none' : (e.style.display==='block'?'none':'block');
 }
 
-function selectedId(){ return String(select.value || '1'); }
-function moveSelected(dx,dy){
-  const z = getZoneCal(selectedId());
-  z.dx = (z.dx || 0) + dx;
-  z.dy = (z.dy || 0) + dy;
-  render();
-}
-function resetSelected(){
-  cal.zones[selectedId()]={dx:0,dy:0};
-  render();
-}
-function resetAll(){
-  if(confirm('전체 구역별 보정을 초기화할까요?')) {
-    cal={width:7,labels:true,zones:{}};
-    render();
-  }
-}
-function setWidth(v){ cal.width=Number(v); render(); }
-function toggleLabels(){ cal.labels=!cal.labels; render(); }
-function toggleBox(){const e=document.getElementById('box'); e.style.display=e.style.display==='block'?'none':'block';}
-function focusZone(){
-  updateInfo();
-  const id = selectedId();
-  const f = calibratedGeo().features.filter(x=>String(x.properties.id)===id);
-  if(f.length){
-    const fg=L.geoJSON({type:'FeatureCollection',features:f});
-    try{map.fitBounds(fg.getBounds().pad(1));}catch(e){}
-  }
+function toggleLabels(){
+  labelsVisible = !labelsVisible;
+  drawLabels();
 }
 
-function downloadCalibrated(){
-  const blob = new Blob([JSON.stringify(calibratedGeo(), null, 2)], {type:'application/json'});
+function downloadGeoJSON(){
+  const blob = new Blob([JSON.stringify(currentGeo(), null, 2)], {type:'application/json'});
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = 'hangang_fishing_forbidden_zones_v15_per_zone_calibrated.geojson';
+  a.download = 'hangang_fishing_forbidden_zones_v16_edited.geojson';
   a.click();
   URL.revokeObjectURL(url);
 }
 
-const list=document.getElementById('list');
-unique.forEach(z=>{
-  const d=document.createElement('div');
-  d.className='item';
-  d.innerHTML=`<b>${z.id}. ${z.name}</b>`;
-  d.onclick=()=>{select.value=z.id;focusZone();};
-  list.appendChild(d);
-});
-
-render();
-try{map.fitBounds(layer.getBounds().pad(.08))}catch(e){}
+addGeo();
+drawLabels();
+rebuildList();
+try{map.fitBounds(editable.getBounds().pad(.08))}catch(e){}
 </script>
 </body>
 </html>
