@@ -2339,69 +2339,6 @@
                 marker_a9e41c21c400bba5597df30e398e3da3.setIcon(icon_bfc6d6a069b6b1ef13230d3b0569d259);
             
     
-
-
-            // 3번 금지구역 수정사항 적용: 옥수동 494-1 표지판 ~ 중랑천 합수부, 호안/자전거도로 기준
-            var zone3_modified_group = L.featureGroup().addTo(map_75aa30e4abf722180ef8052866b5d168);
-
-            var zone3_modified_line = L.polyline(
-                [
-                    [37.54130362451144, 127.0301539065033],
-                    [37.54175, 127.03032],
-                    [37.54235, 127.03058],
-                    [37.54305, 127.03092],
-                    [37.54380, 127.03125],
-                    [37.5446333, 127.0315956]
-                ],
-                {
-                    "color": "#ff0000",
-                    "weight": 7,
-                    "opacity": 0.95,
-                    "dashArray": null
-                }
-            ).addTo(zone3_modified_group);
-            zone3_modified_line.bindTooltip(
-                `<div>3번 금지구역: 옥수동 494-1 표지판 ~ 중랑천 합수부(호안 기준)</div>`,
-                {"sticky": true}
-            );
-            zone3_modified_line.bindPopup(
-                `<div style="width:260px"><b>3번 금지구역 수정 적용</b><br>시작점: 옥수동 494-1 표지판<br>종료점: 중랑천 합수부<br>기준: 직선이 아니라 호안/자전거도로를 따라 표시</div>`
-            );
-
-            var zone3_start_marker = L.marker(
-                [37.54130362451144, 127.0301539065033],
-                {}
-            ).addTo(zone3_modified_group);
-            var zone3_start_icon = L.AwesomeMarkers.icon(
-                {
-                    "markerColor": "blue",
-                    "iconColor": "white",
-                    "icon": "map-marker",
-                    "prefix": "fa",
-                    "extraClasses": "fa-rotate-0"
-                }
-            );
-            zone3_start_marker.setIcon(zone3_start_icon);
-            zone3_start_marker.bindTooltip(`<div>3번 시작점: 옥수동 494-1 표지판</div>`, {"sticky": true});
-            zone3_start_marker.bindPopup(`<div>3번 시작점: 옥수동 494-1 표지판<br>좌표: 37.54130362, 127.03015391</div>`);
-
-            var zone3_end_marker = L.marker(
-                [37.5446333, 127.0315956],
-                {}
-            ).addTo(zone3_modified_group);
-            var zone3_end_icon = L.AwesomeMarkers.icon(
-                {
-                    "markerColor": "red",
-                    "iconColor": "white",
-                    "icon": "flag-checkered",
-                    "prefix": "fa",
-                    "extraClasses": "fa-rotate-0"
-                }
-            );
-            zone3_end_marker.setIcon(zone3_end_icon);
-            zone3_end_marker.bindTooltip(`<div>3번 종료점: 중랑천 합수부 기준점</div>`, {"sticky": true});
-            zone3_end_marker.bindPopup(`<div>3번 종료점: 중랑천 합수부 기준점<br>자전거도로/호안 기준 연결점</div>`);
-
             var layer_control_aacef64a4be08c6b47c0d95d77efc5a2_layers = {
                 base_layers : {
                     "openstreetmap" : tile_layer_2190876d776d6a202c0289ab9f43b3e9,
