@@ -2369,6 +2369,22 @@
             zone3_end_marker.bindTooltip('<div>3번 종료점: 중랑천 합수부</div>', {sticky:true});
             zone3_end_marker.bindPopup('<div>3번 종료점: 중랑천 합수부<br>3번 금지구역은 시작점부터 이 지점까지 자전거도로/호안을 따라 연결했습니다.</div>');
 
+
+
+            // ===== 섬/샛강 특수면 레이어 복원 =====
+            // 이전 작업본(v21)의 수작업 보정 폴리곤을 현재 기준 파일에 다시 추가함.
+            var restored_island_saetgang_polygons = {"type": "FeatureCollection", "name": "restored_island_saetgang_polygons", "features": [{"type": "Feature", "properties": {"id": 6, "name": "노들섬 전체", "description": "이촌 3지역 특수면: 노들섬 전체", "source": "restored_from_previous_v21_rebuilt_corrected"}, "geometry": {"type": "Polygon", "coordinates": [[[126.9561, 37.5173], [126.9588, 37.519], [126.9626, 37.5191], [126.9665, 37.5177], [126.968, 37.5155], [126.9658, 37.514], [126.961, 37.5136], [126.9568, 37.5148], [126.9561, 37.5173]]]}}, {"type": "Feature", "properties": {"id": 7, "name": "밤섬 전체", "description": "밤섬지역 특수면: 밤섬 전체", "source": "restored_from_previous_v21_rebuilt_corrected"}, "geometry": {"type": "Polygon", "coordinates": [[[126.922, 37.5327], [126.925, 37.5346], [126.9304, 37.5347], [126.935, 37.5323], [126.9361, 37.5299], [126.9322, 37.5285], [126.9263, 37.5288], [126.9218, 37.5305], [126.922, 37.5327]]]}}, {"type": "Feature", "properties": {"id": 22, "name": "선유도공원 전체", "description": "양화 2지역 특수면: 선유도공원 전체", "source": "restored_from_previous_v21_rebuilt_corrected"}, "geometry": {"type": "Polygon", "coordinates": [[[126.8966, 37.5432], [126.8994, 37.545], [126.9032, 37.5443], [126.9061, 37.5422], [126.9052, 37.5399], [126.9014, 37.5384], [126.8975, 37.5394], [126.8959, 37.5414], [126.8966, 37.5432]]]}}, {"type": "Feature", "properties": {"id": 20, "name": "여의도 샛강 전역", "description": "여의도동 샛강 내수면 전역", "source": "restored_from_previous_v21_rebuilt_corrected"}, "geometry": {"type": "Polygon", "coordinates": [[[126.8925, 37.5181], [126.8995, 37.5197], [126.9085, 37.5199], [126.9195, 37.5187], [126.9299, 37.5168], [126.9312, 37.5144], [126.921, 37.5153], [126.91, 37.5161], [126.9005, 37.5167], [126.8932, 37.5169], [126.8925, 37.5181]]]}}]};
+            var restored_island_layer = L.geoJson(restored_island_saetgang_polygons, {
+                style: function(feature) {
+                    return {color: '#ff7a00', weight: 3, opacity: 0.95, fillColor: '#ffb000', fillOpacity: 0.35};
+                },
+                onEachFeature: function(feature, layer) {
+                    var p = feature.properties || {};
+                    layer.bindTooltip((p.name || '특수면'), {sticky:true});
+                    layer.bindPopup('<div style="width:280px"><b>' + (p.name || '') + '</b><br>' + (p.description || '') + '<br><br><small>이 레이어는 이전 작업본의 밤섬·노들섬·선유도·여의도 샛강 폴리곤을 현재 지도에 복원한 것입니다.</small></div>');
+                }
+            }).addTo(map_75aa30e4abf722180ef8052866b5d168);
+
 var layer_control_aacef64a4be08c6b47c0d95d77efc5a2_layers = {
                 base_layers : {
                     "openstreetmap" : tile_layer_2190876d776d6a202c0289ab9f43b3e9,
@@ -2380,6 +2396,7 @@ var layer_control_aacef64a4be08c6b47c0d95d77efc5a2_layers = {
                     "\uad50\ub7c9=\uae08\uc9c0 \uaddc\uce59 \uc801\uc6a9 \ub300\uc0c1" : geo_json_2f779d1f4eec1a5010a0411e1ab95c99,
                     "낚시금지구역 24개 설정 적용" : fishing_ban_zones_layer,
                     "3번 시작/종료 기준점" : zone3_verified_group,
+                    "섬/샛강 특수면 복원(밤섬·노들섬·선유도·여의도)" : restored_island_layer,
                 },
             };
             let layer_control_aacef64a4be08c6b47c0d95d77efc5a2 = L.control.layers(
