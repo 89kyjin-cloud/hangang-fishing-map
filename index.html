@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>한강 낚시금지구역 v73 정밀 GPS</title>
+<title>한강 낚시금지구역 v74 GPS 자동확대</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <style>
 html,body,#map{height:100%;margin:0}body{font-family:-apple-system,BlinkMacSystemFont,"Noto Sans KR",Arial,sans-serif}
@@ -22,13 +22,14 @@ html,body,#map{height:100%;margin:0}body{font-family:-apple-system,BlinkMacSyste
 .gpssmall{font-size:12px;color:#555}
 </style></head>
 <body><div id="map"></div>
-<div class="panel"><b>한강 낚시금지구역 v73 정밀 GPS</b><br>
+<div class="panel"><b>한강 낚시금지구역 v74 GPS 자동확대</b><br>
 기준본: 최종본. <b>금지구역 설정·경계·좌표는 변경하지 않았습니다.</b><br>
-추가: <b>고정밀 GPS 다중 샘플 + 정확도 가중 평균 + 경계 인접 판정</b>.<br>
-주의: 경계 부근은 GPS 오차가 있으므로 현장 표지판·공식 고시 우선.</div>
+추가: <b>내 위치 확인 시 현재 위치로 부드럽게 이동하고 자동 확대</b>.<br>
+GPS 오차 원과 주변 금지구역 경계가 함께 보이도록 조정했습니다.</div>
 <button class="btn" onclick="toggleList()">구역목록</button><button class="gpsbtn" onclick="checkMyLocation()">내 위치 정밀확인</button><div class="list" id="list"></div><div class="gpsbox" id="gpsbox">GPS 대기 중</div>
 <div class="legend">🟥 금지구역 · 🟩 허가 수면 · 🔵 기준점</div>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script></script>
 <script>
 
 // === GPS 정밀 현재 위치 금지구역 판정 기능 v73 ===
@@ -161,7 +162,15 @@ function renderLocationResult(loc){
     fillOpacity: 0.12
   }).addTo(map);
 
-  map.setView([lat, lng], Math.max(map.getZoom(), 17));
+  map.flyTo([lat, lng], 19, {animate:true, duration:1.2});
+      setTimeout(() => {
+        try {
+          const b = myAccuracyCircle ? myAccuracyCircle.getBounds() : L.latLng(lat,lng).toBounds(60);
+          map.fitBounds(b.pad(1.8), {padding:[60,60], maxZoom:19});
+        } catch(e) {
+          map.setView([lat, lng], 19);
+        }
+      }, 1300);
 
   let accuracyText = '<div class="gpssmall">좌표: ' + lat.toFixed(7) + ', ' + lng.toFixed(7) +
     '<br>GPS 최저오차: 약 ' + acc + 'm · 샘플 ' + (loc.count || 1) + '개' +
