@@ -28,7 +28,8 @@ html,body,#map{height:100%;margin:0}body{font-family:-apple-system,BlinkMacSyste
 주의: 경계 부근은 GPS 오차가 있으므로 현장 표지판·공식 고시 우선.</div>
 <button class="btn" onclick="toggleList()">구역목록</button><button class="gpsbtn" onclick="checkMyLocation()">내 위치 정밀확인</button><div class="list" id="list"></div><div class="gpsbox" id="gpsbox">GPS 대기 중</div>
 <div class="legend">🟥 금지구역 · 🟩 허가 수면 · 🔵 기준점</div>
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
 
 // === GPS 정밀 현재 위치 금지구역 판정 기능 v73 ===
 // 방식: 고정밀 GPS 다중 샘플 수집 → 정확도 가중 평균 + 최저오차 샘플 검증 → 금지구역 포함/경계거리 판정
