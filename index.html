@@ -14,10 +14,10 @@ html,body,#map{height:100%;margin:0}body{font-family:-apple-system,BlinkMacSyste
 @media(max-width:760px){.panel{font-size:12px;width:min(360px,calc(100vw - 24px))}.legend{font-size:12px}}
 </style></head>
 <body><div id="map"></div>
-<div class="panel"><b>한강 낚시금지구역 v67</b><br>
-기준본: index(21).html. <b>22번 외 나머지 금지구역은 고정</b>했습니다.<br>
-반영: <b>22번은 최종 지정 긴 띠 구역 + 선유도만 유지</b>.<br>
-삭제: 22번에 남아 있던 주변 불필요한 주황색 금지구역 조각.</div>
+<div class="panel"><b>한강 낚시금지구역 v68</b><br>
+기준본: v67. <b>1번·14번·17번·22번은 고정</b>했습니다.<br>
+반영: <b>주황색으로 표시되던 금지구역 색상을 기존 금지구역과 같은 빨간색으로 통일</b>.<br>
+방식: 구역 형상은 변경하지 않고 색상만 통일. 나머지 구역 고정.</div>
 <button class="btn" onclick="toggleList()">구역목록</button><div class="list" id="list"></div>
 <div class="legend">🟥 금지구역 · 🟩 허가 수면 · 🔵 기준점</div>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
