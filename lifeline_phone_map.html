@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes" />
+<title>한강 생명의전화 위치지도 1차 초안</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+  html, body { margin:0; padding:0; height:100%; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Noto Sans KR",Arial,sans-serif; }
+  #map { height:100vh; width:100vw; }
+  .panel { position:absolute; z-index:1000; top:10px; left:10px; right:10px; background:white; border-radius:12px; box-shadow:0 2px 12px rgba(0,0,0,.25); padding:10px; max-width:520px; }
+  .title { font-weight:800; font-size:16px; margin-bottom:6px; }
+  .warn { font-size:12px; line-height:1.35; color:#b00020; font-weight:700; margin-bottom:8px; }
+  .controls { display:flex; gap:6px; flex-wrap:wrap; }
+  select, button { font-size:14px; padding:8px; border:1px solid #bbb; border-radius:8px; background:#fff; }
+  button { font-weight:700; }
+  .legend { font-size:12px; margin-top:6px; color:#333; line-height:1.35; }
+  .phone-marker { font-size:22px; text-align:center; line-height:26px; filter: drop-shadow(0 1px 2px rgba(0,0,0,.45)); }
+  .bridge-label { background:rgba(255,255,255,.85); padding:2px 6px; border-radius:6px; border:1px solid #999; font-size:12px; font-weight:700; }
+</style>
+</head>
+<body>
+<div id="map"></div>
+<div class="panel">
+  <div class="title">☎ 한강 생명의전화 위치지도 1차 초안</div>
+  <div class="warn">※ 사진 기반 상대위치 + 교량 중심 좌표로 만든 임시 지도입니다. 공식 좌표/실측 좌표가 아니므로 출동 참고용 초안으로만 사용하세요.</div>
+  <div class="controls">
+    <select id="bridgeSelect"><option value="">교량 선택</option></select>
+    <button onclick="goBridge()">이동</button>
+    <button onclick="map.locate({setView:true,maxZoom:17,enableHighAccuracy:true})">내 위치</button>
+  </div>
+  <div class="legend">☎ 생명의전화 추정 위치 / 파란 선 = 교량 기준선 / 팝업에 인접 폴대 정보 표시</div>
+</div>
+<script>
+const map = L.map('map', { zoomControl:true }).setView([37.528, 126.970], 12);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom:19, attribution:'&copy; OpenStreetMap' }).addTo(map);
+
+const phoneIcon = L.divIcon({ className:'phone-marker', html:'☎', iconSize:[28,28], iconAnchor:[14,14] });
+const bridgeIcon = L.divIcon({ className:'bridge-label', html:'', iconSize:[80,20] });
+
+// 1차 초안 데이터: 교량별 남단-북단 기준선 및 생명의전화 상대위치(0=남단, 1=북단)
+// 좌표는 공식 실측값이 아니라 지도 제작용 임시값입니다.
+const bridges = [
+  {name:'양화대교', south:[37.5351,126.9000], north:[37.5451,126.9047], phones:[{t:.42, near:'6~7번 폴대 부근'},{t:.58, near:'9~10번 폴대 부근'}]},
+  {name:'서강대교', south:[37.5289,126.9266], north:[37.5396,126.9340], phones:[{t:.43, near:'6~7번 폴대 부근'},{t:.58, near:'9~10번 폴대 부근'}]},
+  {name:'원효대교', south:[37.5213,126.9406], north:[37.5333,126.9468], phones:[{t:.43, near:'6~7번 폴대 부근'},{t:.58, near:'9~10번 폴대 부근'}]},
+  {name:'마포대교', south:[37.5204,126.9388], north:[37.5336,126.9465], phones:[{t:.43, near:'6~8번 폴대·전망대 부근'},{t:.62, near:'10~11번 폴대·전망대 부근'}]},
+  {name:'한강대교', south:[37.5134,126.9549], mid:[37.5179,126.9585], north:[37.5233,126.9617], phones:[{t:.38, near:'5~6번 폴대 부근'},{t:.66, near:'10~11번 폴대 부근'}]},
+  {name:'동작대교', south:[37.5018,126.9818], north:[37.5159,126.9824], phones:[{t:.40, near:'5~6번 폴대 부근'},{t:.68, near:'11~12번 폴대 부근'}]},
+  {name:'반포대교', south:[37.5067,126.9935], north:[37.5195,126.9967], phones:[{t:.42, near:'6~7번 폴대 부근'},{t:.60, near:'9~10번 폴대 부근'}]},
+  {name:'한남대교', south:[37.5160,127.0198], north:[37.5293,127.0126], phones:[{t:.42, near:'6~7번 폴대 부근'},{t:.60, near:'9~10번 폴대 부근'}]},
+  {name:'동호대교', south:[37.5253,127.0302], north:[37.5375,127.0205], phones:[{t:.42, near:'6~7번 폴대 부근'},{t:.60, near:'9~10번 폴대 부근'}]},
+  {name:'영동대교', south:[37.5242,127.0568], north:[37.5365,127.0622], phones:[{t:.42, near:'6~7번 폴대 부근'},{t:.60, near:'9~10번 폴대 부근'}]},
+  {name:'잠실대교', south:[37.5165,127.0995], north:[37.5320,127.1007], phones:[{t:.42, near:'6~7번 폴대 부근'},{t:.60, near:'9~10번 폴대 부근'}]},
+  {name:'천호대교', south:[37.5286,127.1134], north:[37.5442,127.1112], phones:[{t:.42, near:'6~7번 폴대 부근'},{t:.60, near:'9~10번 폴대 부근'}]},
+  {name:'광진교', south:[37.5351,127.1139], north:[37.5489,127.1089], phones:[{t:.42, near:'6~7번 폴대 부근'},{t:.60, near:'9~10번 폴대 부근'}]}
+];
+
+function interp(a,b,t){ return [a[0]+(b[0]-a[0])*t, a[1]+(b[1]-a[1])*t]; }
+function bridgeLinePoints(b){ return b.mid ? [b.south,b.mid,b.north] : [b.south,b.north]; }
+function interpBridge(b,t){
+  if(!b.mid) return interp(b.south,b.north,t);
+  return t<=0.5 ? interp(b.south,b.mid,t*2) : interp(b.mid,b.north,(t-.5)*2);
+}
+const phoneLayer = L.layerGroup().addTo(map);
+const bridgeLayer = L.layerGroup().addTo(map);
+const select = document.getElementById('bridgeSelect');
+
+bridges.forEach(b => {
+  const opt = document.createElement('option'); opt.value=b.name; opt.textContent=b.name; select.appendChild(opt);
+  L.polyline(bridgeLinePoints(b), {weight:4, opacity:.75}).addTo(bridgeLayer).bindPopup(`<b>${b.name}</b><br>교량 기준선<br><span style="color:#b00020">임시 기준선</span>`);
+  const center = interpBridge(b,.5);
+  L.marker(center, {icon:L.divIcon({className:'bridge-label', html:b.name})}).addTo(bridgeLayer);
+  b.phones.forEach((p,i)=>{
+    const ll = interpBridge(b,p.t);
+    L.marker(ll, {icon:phoneIcon}).addTo(phoneLayer).bindPopup(
+      `<b>${b.name} 생명의전화 ${i+1}</b><br>`+
+      `인접: ${p.near}<br>`+
+      `구분: 사진 기반 추정 위치<br>`+
+      `좌표: ${ll[0].toFixed(6)}, ${ll[1].toFixed(6)}<br>`+
+      `<span style="color:#b00020;font-weight:bold">공식/실측 좌표 아님</span>`
+    );
+  });
+});
+
+function goBridge(){
+  const name = select.value; if(!name) return;
+  const b = bridges.find(x=>x.name===name); const c=interpBridge(b,.5);
+  map.setView(c,16);
+}
+map.on('locationfound', e => {
+  L.circleMarker(e.latlng,{radius:7}).addTo(map).bindPopup(`현재 위치<br>정확도 약 ${Math.round(e.accuracy)}m`).openPopup();
+});
+map.on('locationerror', e => alert('현재 위치를 가져오지 못했습니다: '+e.message));
+
+L.control.layers(null, {'교량 기준선':bridgeLayer, '생명의전화':phoneLayer}, {collapsed:false}).addTo(map);
+</script>
+</body>
+</html>
