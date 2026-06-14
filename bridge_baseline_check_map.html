@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+<title>한강 교량 기준선 위치 확인용</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+ html, body, #map { height:100%; margin:0; padding:0; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }
+ .panel{position:absolute;top:10px;left:10px;right:10px;z-index:1000;background:white;border-radius:14px;padding:12px;box-shadow:0 2px 12px rgba(0,0,0,.25);max-width:520px}
+ .title{font-weight:800;font-size:18px;margin-bottom:6px}
+ .warn{font-size:13px;color:#b00020;font-weight:700;line-height:1.35;margin-bottom:8px}
+ select,button{font-size:16px;border:1px solid #bbb;border-radius:10px;background:#fff;padding:8px;margin-right:4px}
+ button{font-weight:700;color:#1976d2}
+ .hint{font-size:13px;line-height:1.4;color:#333;margin-top:8px}
+ .label{font-weight:900;font-size:13px;color:#111;text-shadow: -1px -1px 0 #fff, 1px -1px 0 #fff, -1px 1px 0 #fff, 1px 1px 0 #fff;}
+ .pole{background:#1e5bd7;color:white;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:900;border:2px solid white;box-shadow:0 1px 4px rgba(0,0,0,.5)}
+ .end{background:#222;color:white;border-radius:10px;padding:2px 6px;font-size:11px;font-weight:900;border:1px solid white}
+</style>
+</head>
+<body>
+<div id="map"></div>
+<div class="panel">
+  <div class="title">🌉 한강 교량 기준선 위치 확인용</div>
+  <div class="warn">※ 생명의전화 마커를 넣기 전 단계입니다. 먼저 교량 기준선이 실제 교량 위에 맞는지 확인하는 용도입니다.</div>
+  <select id="bridgeSelect"></select>
+  <button onclick="goBridge()">이동</button>
+  <button onclick="locateMe()">내 위치</button>
+  <div class="hint">파란 선 = 교량 기준선 / 1번·끝번 = 남단·북단 방향 확인용. 기준선이 틀리면 폴대·생명의전화 위치도 전부 틀어집니다.</div>
+</div>
+<script>
+const map = L.map('map', {zoomControl:true}).setView([37.525, 126.98], 12);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  maxZoom: 19,
+  attribution: '&copy; OpenStreetMap'
+}).addTo(map);
+
+// 남단 -> 북단 기준. 좌표는 교량 기준선 확인용 1차 보정값.
+const bridges = {
+  "양화대교": {start:[37.5390,126.8984], end:[37.5508,126.9131], poles:16},
+  "서강대교": {start:[37.5267,126.9267], end:[37.5438,126.9339], poles:16},
+  "마포대교": {start:[37.5239,126.9400], end:[37.5396,126.9458], poles:16},
+  "원효대교": {start:[37.5226,126.9531], end:[37.5373,126.9572], poles:16},
+  "한강대교": {start:[37.5136,126.9582], end:[37.5270,126.9632], poles:16},
+  "동작대교": {start:[37.5026,126.9793], end:[37.5193,126.9817], poles:16},
+  "반포대교": {start:[37.5075,126.9955], end:[37.5216,126.9992], poles:16},
+  "한남대교": {start:[37.5137,127.0138], end:[37.5328,127.0131], poles:16},
+  "동호대교": {start:[37.5229,127.0252], end:[37.5379,127.0232], poles:16},
+  "영동대교": {start:[37.5247,127.0578], end:[37.5400,127.0614], poles:16},
+  "잠실대교": {start:[37.5147,127.0939], end:[37.5323,127.0998], poles:16},
+  "천호대교": {start:[37.5378,127.1117], end:[37.5470,127.1210], poles:10},
+  "광진교": {start:[37.5418,127.1147], end:[37.5503,127.1246], poles:10}
+};
+
+function interp(a,b,t){ return [a[0]+(b[0]-a[0])*t, a[1]+(b[1]-a[1])*t]; }
+const select = document.getElementById('bridgeSelect');
+Object.keys(bridges).forEach(name=>{
+  const opt=document.createElement('option'); opt.value=name; opt.textContent=name; select.appendChild(opt);
+});
+
+const group = L.layerGroup().addTo(map);
+function drawBridge(name, data){
+  const pts=[data.start,data.end];
+  L.polyline(pts,{color:'#0b63ff',weight:7,opacity:.8}).addTo(group).bindPopup(`<b>${name}</b><br>교량 기준선 확인용`);
+  L.polyline(pts,{color:'#fff',weight:2,opacity:.9,dashArray:'8 8'}).addTo(group);
+  const mid=interp(data.start,data.end,.5);
+  L.marker(mid,{icon:L.divIcon({className:'label',html:name,iconSize:[100,20]})}).addTo(group);
+  for(let i=1;i<=data.poles;i++){
+    const t=(i-1)/(data.poles-1);
+    const p=interp(data.start,data.end,t);
+    if(i===1 || i===data.poles || i===Math.ceil(data.poles/2)){
+      L.marker(p,{icon:L.divIcon({className:'',html:`<div class="pole">${i}</div>`,iconSize:[26,26],iconAnchor:[13,13]})})
+       .addTo(group).bindPopup(`<b>${name} ${i}번 기준점</b><br>사진 기반 폴대 배치 전 기준점`);
+    }
+  }
+  L.marker(data.start,{icon:L.divIcon({className:'',html:`<div class="end">남단 1</div>`,iconSize:[60,18],iconAnchor:[30,9]})}).addTo(group);
+  L.marker(data.end,{icon:L.divIcon({className:'',html:`<div class="end">북단 ${data.poles}</div>`,iconSize:[70,18],iconAnchor:[35,9]})}).addTo(group);
+}
+Object.entries(bridges).forEach(([name,data])=>drawBridge(name,data));
+
+function goBridge(){
+  const name=select.value, b=bridges[name];
+  const bounds=L.latLngBounds([b.start,b.end]).pad(0.7);
+  map.fitBounds(bounds);
+}
+function locateMe(){
+  map.locate({setView:true,maxZoom:16});
+}
+map.on('locationfound', e=> L.circleMarker(e.latlng,{radius:8}).addTo(map).bindPopup('내 위치').openPopup());
+map.on('locationerror', ()=>alert('현재 위치를 가져올 수 없습니다.'));
+</script>
+</body>
+</html>
